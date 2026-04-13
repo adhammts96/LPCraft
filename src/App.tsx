@@ -228,7 +228,7 @@ Be specific, practical, and pedagogically rigorous. Use bullet points and clear 
         userMsg = userInput;
       }
 
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch('https:///api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
