@@ -4,8 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
+  "https://corocoodowuwktyjygin.supabase.co",
+  "sb_publishable_EGtulsTAfpETwlR-4Ldplg_-ysE2XMb"
 );
 
 const LOGO_URL = "https://althikr.edu.sa/wp-content/uploads/2025/03/DASC_Horizontal-Logo-EN-250x82-1.png";
