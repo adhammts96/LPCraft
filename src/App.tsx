@@ -665,4 +665,3 @@ Format sections clearly with ## headers.`;
     </div>
   );
 }
-
