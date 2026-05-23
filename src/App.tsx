@@ -1,1166 +1,664 @@
 // @ts-nocheck 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from "react";
+
+const LOGO_URL = "https://althikr.edu.sa/wp-content/uploads/2025/03/DASC_Horizontal-Logo-EN-250x82-1.png";
 
 const FRAMEWORKS = [
-  'CCSS',
-  'Cambridge',
-  'IB',
-  'CELTA Style',
-  '5Es Model',
-  'SIOP',
-  "Bloom's Taxonomy",
-  'UbD',
-  'Montessori',
-  'STEAM',
-  'General English',
-  'Project-Based Learning',
-  'Competency-Based',
-  'Flipped Classroom',
+  "CCSS","Cambridge","IB","CELTA Style","5Es Model","SIOP",
+  "Bloom's Taxonomy","UbD","Montessori","STEAM","General English",
+  "Project-Based Learning","Competency-Based","Flipped Classroom"
 ];
 
 const AGE_LEVELS = [
-  {
-    label: 'Early Childhood',
-    sub: 'Ages 3–5',
-    value: 'early_childhood',
-    emoji: '🌱',
-  },
-  { label: 'Primary', sub: 'Ages 6–11', value: 'primary', emoji: '📚' },
-  {
-    label: 'Middle School',
-    sub: 'Ages 12–14',
-    value: 'middle_school',
-    emoji: '🔬',
-  },
-  {
-    label: 'High School',
-    sub: 'Ages 15–18',
-    value: 'high_school',
-    emoji: '🎓',
-  },
-  { label: 'Adult / Higher Ed', sub: '18+', value: 'adult', emoji: '🏛️' },
-  { label: 'Mixed / Flexible', sub: 'Open range', value: 'mixed', emoji: '♾️' },
+  { label:"Early Childhood", sub:"Ages 3–5", value:"early_childhood", emoji:"🌱" },
+  { label:"Primary", sub:"Ages 6–11", value:"primary", emoji:"📚" },
+  { label:"Middle School", sub:"Ages 12–14", value:"middle_school", emoji:"🔬" },
+  { label:"High School", sub:"Ages 15–18", value:"high_school", emoji:"🎓" },
+  { label:"Adult / Higher Ed", sub:"18+", value:"adult", emoji:"🏛️" },
+  { label:"Mixed / Flexible", sub:"Open range", value:"mixed", emoji:"♾️" },
 ];
 
 const GRADE_MAP = {
-  early_childhood: ['Pre-K', 'Kindergarten'],
-  primary: ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'],
-  middle_school: ['Grade 7', 'Grade 8', 'Grade 9'],
-  high_school: ['Grade 10', 'Grade 11', 'Grade 12'],
-  adult: ['Undergraduate', 'Postgraduate', 'Professional', 'N/A'],
-  mixed: ['N/A'],
+  early_childhood:["Pre-K","Kindergarten"],
+  primary:["Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6"],
+  middle_school:["Grade 7","Grade 8","Grade 9"],
+  high_school:["Grade 10","Grade 11","Grade 12"],
+  adult:["Undergraduate","Postgraduate","Professional","N/A"],
+  mixed:["N/A"]
 };
 
-const PLANS = [
-  { name: 'Starter', credits: 50, price: '$4.99', note: 'one-time' },
-  {
-    name: 'Pro',
-    credits: 200,
-    price: '$9.99',
-    note: 'one-time',
-    popular: true,
-  },
-  { name: 'Unlimited', credits: '∞', price: '$19.99', note: 'per month' },
-];
-
 const G = {
-  bg: '#07111d',
-  surface: '#0d1e2e',
-  card: '#101f30',
-  border: '#1a3048',
-  gold: '#e8a020',
-  goldLight: '#f5c660',
-  cream: '#f0ece4',
-  muted: '#5a7a96',
-  blue: '#2a8fff',
+  bg:"#f4f9f6",
+  white:"#ffffff",
+  primary:"#1a6b42",
+  primaryLight:"#2e8b5a",
+  accent:"#4db87a",
+  accentLight:"#e8f5ee",
+  text:"#0f2018",
+  muted:"#5a7a68",
+  border:"#cce4d8",
+  surface:"#edf6f1",
+  red:"#e05555",
 };
 
 const injectStyles = () => {
-  if (document.getElementById('lc-styles')) return;
-  const s = document.createElement('style');
-  s.id = 'lc-styles';
+  if (document.getElementById("lc-styles")) return;
+  const s = document.createElement("style");
+  s.id = "lc-styles";
   s.textContent = `
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
-    @keyframes fadeUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes spin { to{transform:rotate(360deg)} }
-    @keyframes slideUp { from{transform:translateY(100%);opacity:0} to{transform:translateY(0);opacity:1} }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
-    .lc-fade { animation: fadeUp .35s ease both; }
-    .lc-mode:hover { transform: translateY(-2px); box-shadow: 0 8px 32px #00000060; }
-    .lc-chip:hover { opacity: .85; }
-    .lc-age:hover { border-color: #e8a02080 !important; }
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500&display=swap');
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:${G.bg};}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
+    @keyframes msgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    .fade{animation:fadeUp .3s ease both;}
+    .msg{animation:msgIn .25s ease both;}
+    ::-webkit-scrollbar{width:4px;}
+    ::-webkit-scrollbar-thumb{background:${G.border};border-radius:2px;}
+    textarea:focus,input:focus{outline:2px solid ${G.accent};outline-offset:1px;}
+    button{cursor:pointer;transition:all .15s;}
   `;
   document.head.appendChild(s);
 };
 
+const API_URL = `${window.location.origin}/api/generate`;
+
 export default function App() {
-  const [screen, setScreen] = useState('home');
+  const [screen, setScreen] = useState("home");
   const [mode, setMode] = useState(null);
   const [frameworks, setFrameworks] = useState([]);
   const [ageLevel, setAgeLevel] = useState(null);
-  const [gradeLevel, setGradeLevel] = useState('');
+  const [gradeLevel, setGradeLevel] = useState("");
   const [extraFiles, setExtraFiles] = useState([]);
   const [templateFile, setTemplateFile] = useState(null);
-  const [userInput, setUserInput] = useState('');
   const [credits, setCredits] = useState(10);
-  const [result, setResult] = useState('');
-  const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [adTimer, setAdTimer] = useState(null);
-  const [copied, setCopied] = useState(false);
   const [adDone, setAdDone] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [viewingHistory, setViewingHistory] = useState(null);
 
+  // Chat state
+  const [messages, setMessages] = useState([]);
+  const [chatInput, setChatInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const chatEndRef = useRef(null);
   const extraRef = useRef();
   const templateRef = useRef();
 
   useEffect(() => {
     injectStyles();
-    (async () => {
-      try {
-        const r = await window.storage.get('lc_v1');
-        if (r) {
-          const d = JSON.parse(r.value);
-          const weekMs = 7 * 24 * 60 * 60 * 1000;
-          if (Date.now() - d.weekStart > weekMs) {
-            const n = { credits: 10, weekStart: Date.now() };
-            await window.storage.set('lc_v1', JSON.stringify(n));
-            setCredits(10);
-          } else {
-            setCredits(d.credits);
-          }
-        } else {
-          await window.storage.set(
-            'lc_v1',
-            JSON.stringify({ credits: 10, weekStart: Date.now() })
-          );
-        }
-      } catch {}
-    })();
+    loadData();
   }, []);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const loadData = async () => {
+    try {
+      // Credits
+      const cr = await window.storage.get("lc_credits");
+      if (cr) {
+        const d = JSON.parse(cr.value);
+        const weekMs = 7*24*60*60*1000;
+        if (Date.now() - d.weekStart > weekMs) {
+          await window.storage.set("lc_credits", JSON.stringify({ credits:10, weekStart:Date.now() }));
+          setCredits(10);
+        } else { setCredits(d.credits); }
+      } else {
+        await window.storage.set("lc_credits", JSON.stringify({ credits:10, weekStart:Date.now() }));
+      }
+      // History
+      const h = await window.storage.get("lc_history");
+      if (h) setHistory(JSON.parse(h.value));
+    } catch {}
+  };
 
   const saveCredits = async (n) => {
     setCredits(n);
     try {
-      const r = await window.storage.get('lc_v1');
-      const weekStart = r ? JSON.parse(r.value).weekStart : Date.now();
-      await window.storage.set(
-        'lc_v1',
-        JSON.stringify({ credits: n, weekStart })
-      );
+      const r = await window.storage.get("lc_credits");
+      const ws = r ? JSON.parse(r.value).weekStart : Date.now();
+      await window.storage.set("lc_credits", JSON.stringify({ credits:n, weekStart:ws }));
     } catch {}
   };
 
+  const saveToHistory = async (content, title) => {
+    const entry = {
+      id: Date.now(),
+      date: new Date().toLocaleDateString(),
+      time: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}),
+      frameworks: frameworks.join(", "),
+      ageLevel: AGE_LEVELS.find(a=>a.value===ageLevel)?.label || "",
+      gradeLevel,
+      mode: mode===1 ? "Template" : "Free Input",
+      title: title || content.split("\n")[0].replace(/[#*]/g,"").trim().slice(0,60),
+      content
+    };
+    const updated = [entry, ...history].slice(0,20);
+    setHistory(updated);
+    try { await window.storage.set("lc_history", JSON.stringify(updated)); } catch {}
+  };
+
   const watchAd = () => {
-    if (adTimer !== null) return;
+    if (adTimer!==null) return;
     setAdDone(false);
     setAdTimer(5);
     const t = setInterval(() => {
-      setAdTimer((p) => {
-        if (p <= 1) {
-          clearInterval(t);
-          setAdTimer(null);
-          setAdDone(true);
-          saveCredits(credits + 1);
-          return null;
-        }
-        return p - 1;
+      setAdTimer(p => {
+        if (p<=1) { clearInterval(t); setAdTimer(null); setAdDone(true); saveCredits(credits+1); return null; }
+        return p-1;
       });
     }, 1000);
   };
 
-  const toggleFw = (fw) =>
-    setFrameworks((p) =>
-      p.includes(fw) ? p.filter((f) => f !== fw) : [...p, fw]
-    );
+  const toggleFw = fw => setFrameworks(p => p.includes(fw)?p.filter(f=>f!==fw):[...p,fw]);
 
-  const readAsText = (file) =>
-    new Promise((res) => {
-      const r = new FileReader();
-      r.onload = (e) => res(e.target.result);
-      r.onerror = () => res(`[${file.name}]`);
-      r.readAsText(file);
-    });
+  const readAsText = file => new Promise(res => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result);
+    r.onerror = () => res(`[${file.name}]`);
+    r.readAsText(file);
+  });
 
-  const generate = async () => {
-    if (credits <= 0) {
-      setShowModal(true);
-      return;
-    }
-    setScreen('generating');
-    setError('');
+  const buildSystem = async (extraContent="") => {
+    const fwStr = frameworks.length ? frameworks.join(", ") : "General curriculum";
+    const ageInfo = AGE_LEVELS.find(a=>a.value===ageLevel);
+    const ageStr = ageInfo ? `${ageInfo.label} (${ageInfo.sub})` : "Not specified";
+    const historyContext = history.slice(0,2).map((h,i) =>
+      `Previous Plan ${i+1} (${h.date}): ${h.title}\nFrameworks: ${h.frameworks}\nAge: ${h.ageLevel}`
+    ).join("\n\n");
+
+    return `You are an expert lesson plan designer for Dar Al-Thikr School, Jeddah. You have mastery of: ${fwStr}.
+
+Student Profile:
+- Age Level: ${ageStr}
+- Grade: ${gradeLevel||"Not specified"}
+- Frameworks: ${fwStr}
+${extraContent ? `\nReference Materials:\n${extraContent}` : ""}
+${historyContext ? `\nTeacher's Previous Plans (for context and continuity):\n${historyContext}` : ""}
+
+Create thorough, classroom-ready lesson plans. Be specific, practical and pedagogically rigorous.
+Format sections clearly with ## headers.`;
+  };
+
+  // CHAT MODE: Send message
+  const sendChat = async () => {
+    if (!chatInput.trim() || isLoading) return;
+    if (credits<=0) { setShowModal(true); return; }
+
+    const userMsg = { role:"user", content:chatInput.trim(), ts:Date.now() };
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
+    setChatInput("");
+    setIsLoading(true);
+    setError("");
+
     try {
-      const fwStr = frameworks.length
-        ? frameworks.join(', ')
-        : 'General curriculum';
-      const ageInfo = AGE_LEVELS.find((a) => a.value === ageLevel);
-      const ageStr = ageInfo
-        ? `${ageInfo.label} (${ageInfo.sub})`
-        : 'Not specified';
-      let extra = '';
-      for (const f of extraFiles) {
-        const txt = await readAsText(f);
-        extra += `\n\n[Reference: ${f.name}]\n${txt.slice(0, 2000)}`;
-      }
-      const sys = `You are an expert lesson plan designer with mastery of: ${fwStr}.
-Create a thorough, classroom-ready lesson plan using these sections:
-## Lesson Overview
-## Learning Objectives  
-## Materials & Resources
-## Lesson Sequence (with timing)
-## Assessment Strategies
-## Differentiation & Inclusion
-## Extension / Homework
+      let extra = "";
+      for (const f of extraFiles) { const t=await readAsText(f); extra+=`\n[${f.name}]\n${t.slice(0,1500)}`; }
+      const sys = await buildSystem(extra);
+      const isFirst = messages.length===0;
+      const systemAddition = isFirst ? "\n\nCreate a complete lesson plan with these sections:\n## Lesson Overview\n## Learning Objectives\n## Materials & Resources\n## Lesson Sequence (with timing)\n## Assessment Strategies\n## Differentiation & Inclusion\n## Extension / Homework" : "\n\nRefine or continue the lesson plan based on the teacher's feedback. Be concise and targeted.";
 
-Student profile — Age: ${ageStr} | Grade: ${
-        gradeLevel || 'Not specified'
-      } | Frameworks: ${fwStr}
-${extra ? `\nTeacher's reference materials:${extra}` : ''}
-Be specific, practical, and pedagogically rigorous. Use bullet points and clear timing within the Lesson Sequence.`;
-
-      let userMsg;
-      if (mode === 1 && templateFile) {
-        const tmpl = await readAsText(templateFile);
-        userMsg = `Use this template as your exact structure and fill every section completely:\n\nTEMPLATE:\n${tmpl.slice(
-          0,
-          3000
-        )}\n\nTEACHER NOTES:\n${userInput || 'None provided'}`;
-      } else {
-        userMsg = userInput;
-      }
-
-      const res = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          system: sys,
-          messages: [{ role: 'user', content: userMsg }],
-        }),
+      const res = await fetch(API_URL, {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          model:"claude-sonnet-4-20250514",
+          max_tokens:1000,
+          system: sys+systemAddition,
+          messages: newMessages.map(m=>({role:m.role,content:m.content}))
+        })
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error.message);
-      const text = data.content.map((b) => b.text || '').join('\n');
-      setResult(text);
-      await saveCredits(credits - 1);
-      setScreen('result');
-    } catch (e) {
-      setError(e.message || 'Generation failed. Please try again.');
-      setScreen('input');
+      const text = data.content.map(b=>b.text||"").join("\n");
+      const aiMsg = { role:"assistant", content:text, ts:Date.now() };
+      const finalMessages = [...newMessages, aiMsg];
+      setMessages(finalMessages);
+      if (isFirst) {
+        await saveCredits(credits-1);
+        await saveToHistory(text);
+      }
+    } catch(e) {
+      setError(e.message||"Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const download = () => {
-    const blob = new Blob([result], { type: 'text/plain' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'lesson-plan.txt';
+  // TEMPLATE MODE: Generate
+  const generateTemplate = async () => {
+    if (credits<=0) { setShowModal(true); return; }
+    if (!templateFile) return;
+    setScreen("generating");
+    setError("");
+    try {
+      let extra="";
+      for (const f of extraFiles) { const t=await readAsText(f); extra+=`\n[${f.name}]\n${t.slice(0,1500)}`; }
+      const tmpl = await readAsText(templateFile);
+      const sys = await buildSystem(extra);
+      const res = await fetch(API_URL, {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          model:"claude-sonnet-4-20250514",
+          max_tokens:1000,
+          system: sys+"\n\nFill in the provided template completely. Follow its structure exactly. Every section must be populated with rich, specific content.",
+          messages:[{ role:"user", content:`Fill in this lesson plan template completely:\n\n${tmpl.slice(0,3000)}` }]
+        })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message);
+      const text = data.content.map(b=>b.text||"").join("\n");
+      await saveCredits(credits-1);
+      await saveToHistory(text, `Template: ${templateFile.name}`);
+      setMessages([{ role:"assistant", content:text, ts:Date.now() }]);
+      setScreen("result");
+    } catch(e) {
+      setError(e.message||"Generation failed.");
+      setScreen("input");
+    }
+  };
+
+  const downloadText = (content, filename="lesson-plan.txt") => {
+    const b = new Blob([content],{type:"text/plain"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(b);
+    a.download = filename;
     a.click();
   };
 
-  const copy = () => {
-    navigator.clipboard.writeText(result);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const resetToHome = () => {
+    setScreen("home"); setMode(null); setFrameworks([]); setAgeLevel(null);
+    setGradeLevel(""); setExtraFiles([]); setTemplateFile(null);
+    setMessages([]); setChatInput(""); setError("");
   };
 
-  const reset = () => {
-    setScreen('home');
-    setMode(null);
-    setFrameworks([]);
-    setAgeLevel(null);
-    setGradeLevel('');
-    setExtraFiles([]);
-    setTemplateFile(null);
-    setUserInput('');
-    setResult('');
-    setError('');
+  // ── STYLES ──
+  const S = {
+    app: { fontFamily:"'DM Sans',sans-serif", background:G.bg, minHeight:"100vh", color:G.text, maxWidth:480, margin:"0 auto" },
+    card: { background:G.white, border:`1px solid ${G.border}`, borderRadius:16, padding:"18px" },
+    btnPrimary: { background:G.primary, color:"#fff", border:"none", borderRadius:10, padding:"14px 20px", fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:15, width:"100%", display:"block" },
+    btnOutline: { background:"transparent", color:G.primary, border:`1.5px solid ${G.primary}`, borderRadius:10, padding:"10px 18px", fontFamily:"'DM Sans',sans-serif", fontWeight:600, fontSize:14 },
+    btnGhost: { background:"transparent", color:G.muted, border:`1px solid ${G.border}`, borderRadius:10, padding:"10px 18px", fontFamily:"'DM Sans',sans-serif", fontSize:14 },
+    label: { fontSize:12, fontWeight:700, color:G.primary, letterSpacing:".08em", textTransform:"uppercase", display:"block", marginBottom:8 },
+    chip: (on) => ({ padding:"7px 14px", borderRadius:20, border:`1.5px solid ${on?G.primary:G.border}`, background:on?G.accentLight:G.white, color:on?G.primary:G.muted, cursor:"pointer", fontSize:13, fontFamily:"'DM Sans',sans-serif", fontWeight:on?600:400 }),
   };
 
-  // ──── shared styles ────
-  const base = {
-    fontFamily: "'DM Sans',sans-serif",
-    background: G.bg,
-    minHeight: '100vh',
-    color: G.cream,
-  };
-  const card = (extra = {}) => ({
-    background: G.card,
-    border: `1px solid ${G.border}`,
-    borderRadius: 16,
-    padding: '20px',
-    ...extra,
-  });
-  const btn = (v = 'gold') => ({
-    padding: '13px 24px',
-    borderRadius: 10,
-    border: 'none',
-    cursor: 'pointer',
-    fontFamily: "'DM Sans',sans-serif",
-    fontWeight: 600,
-    fontSize: 14,
-    transition: 'all .2s',
-    ...(v === 'gold'
-      ? {
-          background: `linear-gradient(135deg,${G.gold},${G.goldLight})`,
-          color: '#07111d',
-        }
-      : v === 'ghost'
-      ? {
-          background: 'transparent',
-          color: G.muted,
-          border: `1px solid ${G.border}`,
-        }
-      : {
-          background: G.surface,
-          color: G.cream,
-          border: `1px solid ${G.border}`,
-        }),
-  });
-  const label = {
-    fontSize: 12,
-    fontWeight: 600,
-    color: G.goldLight,
-    letterSpacing: '.08em',
-    textTransform: 'uppercase',
-    display: 'block',
-    marginBottom: 10,
-  };
+  // ── SCREENS ──
 
-  // ──── GENERATING ────
-  if (screen === 'generating')
+  // GENERATING
+  if (screen==="generating") return (
+    <div style={{...S.app,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"100vh",gap:20}}>
+      <div style={{width:52,height:52,borderRadius:"50%",border:`3px solid ${G.border}`,borderTopColor:G.primary,animation:"spin 1s linear infinite"}}/>
+      <p style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:20,color:G.primary}}>Building your lesson plan…</p>
+      <p style={{color:G.muted,fontSize:13}}>Powered by Claude AI · Usually 10–20 seconds</p>
+    </div>
+  );
+
+  // TEMPLATE RESULT
+  if (screen==="result") {
+    const content = messages[0]?.content||"";
+    const sections = content.split(/\n##\s+/).filter(Boolean);
     return (
-      <div
-        style={{
-          ...base,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 20,
-          minHeight: '100vh',
-        }}
-      >
-        <div
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: '50%',
-            border: `3px solid ${G.border}`,
-            borderTopColor: G.gold,
-            animation: 'spin 1s linear infinite',
-          }}
-        />
-        <p
-          style={{
-            fontFamily: "'Playfair Display',serif",
-            fontSize: 22,
-            color: G.gold,
-          }}
-        >
-          Crafting your lesson plan…
-        </p>
-        <p style={{ color: G.muted, fontSize: 13 }}>
-          Powered by Claude · Usually takes 10–20 seconds
-        </p>
-      </div>
-    );
-
-  // ──── RESULT ────
-  if (screen === 'result') {
-    const sections = result.split(/\n##\s+/).filter(Boolean);
-    const firstIsTitle = !result.trimStart().startsWith('##');
-    return (
-      <div style={{ ...base, padding: '20px 16px' }} className="lc-fade">
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 20,
-          }}
-        >
-          <div>
-            <h2
-              style={{
-                fontFamily: "'Playfair Display',serif",
-                fontSize: 20,
-                color: G.gold,
-              }}
-            >
-              Lesson Plan Ready
-            </h2>
-            <p style={{ color: G.muted, fontSize: 12, marginTop: 3 }}>
-              ⚡ {credits} credits remaining
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={copy} style={btn('outline')}>
-              {copied ? '✓ Copied' : 'Copy'}
-            </button>
-            <button onClick={download} style={btn('outline')}>
-              ↓ Save
-            </button>
-          </div>
+      <div style={{...S.app,padding:"0 0 32px"}} className="fade">
+        <div style={{background:G.primary,padding:"16px 18px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <button onClick={resetToHome} style={{background:"none",border:"none",color:"#fff",fontSize:13,display:"flex",alignItems:"center",gap:4}}>← Back</button>
+          <span style={{color:"#fff",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:15}}>Lesson Plan Ready ✓</span>
+          <button onClick={()=>downloadText(content,"lesson-plan.txt")} style={{background:"rgba(255,255,255,.2)",border:"1px solid rgba(255,255,255,.4)",borderRadius:8,padding:"6px 12px",color:"#fff",fontSize:12,fontWeight:600,fontFamily:"'DM Sans',sans-serif"}}>↓ Download</button>
         </div>
-
-        <div
-          style={{
-            ...card(),
-            maxHeight: '65vh',
-            overflowY: 'auto',
-            fontSize: 13.5,
-            lineHeight: 1.85,
-            marginBottom: 20,
-          }}
-        >
-          {firstIsTitle && sections.length > 0 ? (
-            <>
-              <p style={{ color: G.muted, fontSize: 13, marginBottom: 16 }}>
-                {sections[0]}
-              </p>
-              {sections.slice(1).map((s, i) => {
-                const nl = s.indexOf('\n');
-                const title = nl > -1 ? s.slice(0, nl) : s;
-                const body = nl > -1 ? s.slice(nl + 1) : '';
-                return (
-                  <div key={i} style={{ marginBottom: 20 }}>
-                    <h3
-                      style={{
-                        fontFamily: "'Playfair Display',serif",
-                        color: G.goldLight,
-                        fontSize: 15,
-                        marginBottom: 6,
-                        borderBottom: `1px solid ${G.border}`,
-                        paddingBottom: 5,
-                      }}
-                    >
-                      {title}
-                    </h3>
-                    <p style={{ color: '#c5bdb0', whiteSpace: 'pre-wrap' }}>
-                      {body}
-                    </p>
-                  </div>
-                );
-              })}
-            </>
-          ) : (
-            sections.map((s, i) => {
-              const nl = s.indexOf('\n');
-              const title = nl > -1 ? s.slice(0, nl) : s;
-              const body = nl > -1 ? s.slice(nl + 1) : '';
+        <div style={{padding:"16px 16px 0"}}>
+          <div style={{...S.card,maxHeight:"72vh",overflowY:"auto"}}>
+            {sections.map((s,i)=>{
+              const nl=s.indexOf("\n"); const title=nl>-1?s.slice(0,nl):s; const body=nl>-1?s.slice(nl+1):"";
               return (
-                <div key={i} style={{ marginBottom: 20 }}>
-                  <h3
-                    style={{
-                      fontFamily: "'Playfair Display',serif",
-                      color: G.goldLight,
-                      fontSize: 15,
-                      marginBottom: 6,
-                      borderBottom: `1px solid ${G.border}`,
-                      paddingBottom: 5,
-                    }}
-                  >
-                    {title}
-                  </h3>
-                  <p style={{ color: '#c5bdb0', whiteSpace: 'pre-wrap' }}>
-                    {body}
-                  </p>
+                <div key={i} style={{marginBottom:20}}>
+                  <h3 style={{fontFamily:"'Plus Jakarta Sans',sans-serif",color:G.primary,fontSize:14,fontWeight:700,marginBottom:6,borderBottom:`2px solid ${G.accentLight}`,paddingBottom:4}}>{title}</h3>
+                  <p style={{color:G.text,fontSize:13.5,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{body}</p>
                 </div>
               );
-            })
-          )}
+            })}
+          </div>
+          <button onClick={resetToHome} style={{...S.btnPrimary,marginTop:14}}>+ Create Another</button>
         </div>
-
-        <button onClick={reset} style={{ ...btn('gold'), width: '100%' }}>
-          + Create Another Lesson Plan
-        </button>
       </div>
     );
   }
 
-  // ──── INPUT ────
-  if (screen === 'input') {
-    const canGo =
-      mode === 2
-        ? userInput.trim().length > 10
-        : templateFile || userInput.trim().length > 5;
+  // HISTORY DETAIL
+  if (viewingHistory) {
+    const sections = viewingHistory.content.split(/\n##\s+/).filter(Boolean);
     return (
-      <div style={{ ...base, padding: '20px 16px' }} className="lc-fade">
-        {/* nav */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 22,
-          }}
-        >
-          <button
-            onClick={() => setScreen('setup')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: G.muted,
-              cursor: 'pointer',
-              fontSize: 13,
-            }}
-          >
-            ← Back
-          </button>
-          <button
-            onClick={() => setShowModal(true)}
-            style={{
-              background: `${G.gold}18`,
-              border: `1px solid ${G.gold}40`,
-              borderRadius: 20,
-              padding: '5px 14px',
-              color: G.goldLight,
-              fontSize: 12,
-              cursor: 'pointer',
-              fontFamily: "'DM Sans',sans-serif",
-            }}
-          >
-            ⚡ {credits} credits
-          </button>
+      <div style={{...S.app,padding:"0 0 32px"}} className="fade">
+        <div style={{background:G.primary,padding:"16px 18px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <button onClick={()=>setViewingHistory(null)} style={{background:"none",border:"none",color:"#fff",fontSize:13}}>← Back</button>
+          <span style={{color:"#fff",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:14}}>Past Lesson Plan</span>
+          <button onClick={()=>downloadText(viewingHistory.content)} style={{background:"rgba(255,255,255,.2)",border:"1px solid rgba(255,255,255,.4)",borderRadius:8,padding:"6px 12px",color:"#fff",fontSize:12,fontWeight:600,fontFamily:"'DM Sans',sans-serif"}}>↓ Download</button>
         </div>
-
-        <h2
-          style={{
-            fontFamily: "'Playfair Display',serif",
-            fontSize: 22,
-            marginBottom: 5,
-          }}
-        >
-          {mode === 1 ? 'Upload Your Template' : 'Describe Your Lesson'}
-        </h2>
-        <p style={{ color: G.muted, fontSize: 13, marginBottom: 22 }}>
-          {mode === 1
-            ? 'Upload a template file — AI will fill every section for you'
-            : 'Describe the lesson in plain language, as much or as little detail as you like'}
-        </p>
-
-        {error && (
-          <div
-            style={{
-              background: '#200a0a',
-              border: `1px solid #e05555`,
-              borderRadius: 10,
-              padding: 14,
-              marginBottom: 18,
-              color: '#ff9090',
-              fontSize: 13,
-            }}
-          >
-            {error}
+        <div style={{padding:"16px"}}>
+          <div style={{background:G.accentLight,borderRadius:10,padding:"10px 14px",marginBottom:14,fontSize:12,color:G.primary}}>
+            📅 {viewingHistory.date} · {viewingHistory.ageLevel} · {viewingHistory.frameworks}
           </div>
-        )}
-
-        {mode === 1 && (
-          <div style={{ marginBottom: 18 }}>
-            <span style={label}>Your Template File</span>
-            <input
-              type="file"
-              ref={templateRef}
-              onChange={(e) => setTemplateFile(e.target.files[0])}
-              accept=".txt,.doc,.docx,.pdf"
-              style={{ display: 'none' }}
-            />
-            <button
-              onClick={() => templateRef.current.click()}
-              style={{ ...btn('outline'), width: '100%', textAlign: 'center' }}
-            >
-              {templateFile
-                ? `✓  ${templateFile.name}`
-                : '📄  Choose Template File (.txt / .docx / .pdf)'}
-            </button>
-          </div>
-        )}
-
-        <div style={{ marginBottom: 18 }}>
-          <span style={label}>
-            {mode === 1
-              ? 'Additional Notes for the AI (optional)'
-              : 'Lesson Description'}
-          </span>
-          <textarea
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            placeholder={
-              mode === 1
-                ? 'Any specific instructions, preferred activities, or context for the AI…'
-                : "e.g. A 45-minute lesson on the water cycle for Grade 5. Include a hands-on activity, group work, and an exit ticket assessment. We've covered evaporation last week."
-            }
-            style={{
-              width: '100%',
-              minHeight: 140,
-              background: G.surface,
-              border: `1px solid ${G.border}`,
-              borderRadius: 10,
-              color: G.cream,
-              padding: '12px 14px',
-              fontFamily: "'DM Sans',sans-serif",
-              fontSize: 13.5,
-              resize: 'vertical',
-              lineHeight: 1.65,
-              outline: 'none',
-            }}
-          />
-        </div>
-
-        <div style={{ marginBottom: 24 }}>
-          <span style={label}>Reference Files (optional)</span>
-          <input
-            type="file"
-            ref={extraRef}
-            multiple
-            onChange={(e) => setExtraFiles([...e.target.files])}
-            style={{ display: 'none' }}
-          />
-          <button
-            onClick={() => extraRef.current.click()}
-            style={{ ...btn('ghost'), width: '100%' }}
-          >
-            {extraFiles.length > 0
-              ? `📎  ${extraFiles.length} file(s) attached`
-              : '+  Attach Textbook Pages, Rubrics, or Notes'}
-          </button>
-        </div>
-
-        <button
-          onClick={generate}
-          disabled={!canGo}
-          style={{ ...btn('gold'), width: '100%', opacity: canGo ? 1 : 0.4 }}
-        >
-          Generate Lesson Plan (1 credit)
-        </button>
-      </div>
-    );
-  }
-
-  // ──── SETUP ────
-  if (screen === 'setup') {
-    const grades = ageLevel ? GRADE_MAP[ageLevel] : [];
-    const canContinue = frameworks.length > 0 && ageLevel;
-    return (
-      <div style={{ ...base, padding: '20px 16px' }} className="lc-fade">
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 22,
-          }}
-        >
-          <button
-            onClick={() => setScreen('home')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: G.muted,
-              cursor: 'pointer',
-              fontSize: 13,
-            }}
-          >
-            ← Back
-          </button>
-          <span style={{ fontSize: 12, color: G.muted }}>
-            {mode === 1 ? 'Template Mode' : 'Free Input Mode'}
-          </span>
-        </div>
-
-        <h2
-          style={{
-            fontFamily: "'Playfair Display',serif",
-            fontSize: 22,
-            marginBottom: 4,
-          }}
-        >
-          Lesson Setup
-        </h2>
-        <p style={{ color: G.muted, fontSize: 13, marginBottom: 26 }}>
-          Configure your teaching context
-        </p>
-
-        {/* Frameworks */}
-        <div style={{ marginBottom: 26 }}>
-          <span style={label}>
-            Curriculum Framework(s){' '}
-            <span
-              style={{
-                color: G.muted,
-                textTransform: 'none',
-                letterSpacing: 0,
-              }}
-            >
-              — pick all that apply
-            </span>
-          </span>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {FRAMEWORKS.map((fw) => {
-              const on = frameworks.includes(fw);
+          <div style={{...S.card,maxHeight:"70vh",overflowY:"auto"}}>
+            {sections.map((s,i)=>{
+              const nl=s.indexOf("\n"); const title=nl>-1?s.slice(0,nl):s; const body=nl>-1?s.slice(nl+1):"";
               return (
-                <button
-                  key={fw}
-                  className="lc-chip"
-                  onClick={() => toggleFw(fw)}
-                  style={{
-                    padding: '6px 13px',
-                    borderRadius: 20,
-                    border: `1px solid ${on ? G.gold : G.border}`,
-                    background: on ? `${G.gold}22` : G.surface,
-                    color: on ? G.goldLight : G.muted,
-                    cursor: 'pointer',
-                    fontSize: 13,
-                    fontFamily: "'DM Sans',sans-serif",
-                    transition: 'all .15s',
-                  }}
-                >
-                  {fw}
-                </button>
+                <div key={i} style={{marginBottom:20}}>
+                  <h3 style={{fontFamily:"'Plus Jakarta Sans',sans-serif",color:G.primary,fontSize:14,fontWeight:700,marginBottom:6,borderBottom:`2px solid ${G.accentLight}`,paddingBottom:4}}>{title}</h3>
+                  <p style={{color:G.text,fontSize:13.5,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{body}</p>
+                </div>
               );
             })}
           </div>
         </div>
-
-        {/* Age Level */}
-        <div style={{ marginBottom: 24 }}>
-          <span style={label}>Age Level</span>
-          <div
-            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}
-          >
-            {AGE_LEVELS.map((al) => {
-              const on = ageLevel === al.value;
-              return (
-                <button
-                  key={al.value}
-                  className="lc-age"
-                  onClick={() => {
-                    setAgeLevel(al.value);
-                    setGradeLevel('');
-                  }}
-                  style={{
-                    padding: '12px',
-                    borderRadius: 12,
-                    border: `1px solid ${on ? G.gold : G.border}`,
-                    background: on ? `${G.gold}18` : G.surface,
-                    color: on ? G.cream : G.muted,
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    fontFamily: "'DM Sans',sans-serif",
-                    transition: 'all .15s',
-                  }}
-                >
-                  <div style={{ fontSize: 20, marginBottom: 3 }}>
-                    {al.emoji}
-                  </div>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>
-                    {al.label}
-                  </div>
-                  <div style={{ fontSize: 11 }}>{al.sub}</div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Grade */}
-        {grades.length > 0 && (
-          <div style={{ marginBottom: 26 }}>
-            <span style={label}>
-              Grade Level{' '}
-              <span
-                style={{
-                  color: G.muted,
-                  textTransform: 'none',
-                  letterSpacing: 0,
-                }}
-              >
-                — optional
-              </span>
-            </span>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {grades.map((g) => {
-                const on = gradeLevel === g;
-                return (
-                  <button
-                    key={g}
-                    onClick={() => setGradeLevel(on ? '' : g)}
-                    style={{
-                      padding: '6px 13px',
-                      borderRadius: 20,
-                      border: `1px solid ${on ? G.gold : G.border}`,
-                      background: on ? `${G.gold}22` : G.surface,
-                      color: on ? G.goldLight : G.muted,
-                      cursor: 'pointer',
-                      fontSize: 13,
-                      fontFamily: "'DM Sans',sans-serif",
-                      transition: 'all .15s',
-                    }}
-                  >
-                    {g}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        <button
-          onClick={() => setScreen('input')}
-          disabled={!canContinue}
-          style={{
-            ...btn('gold'),
-            width: '100%',
-            opacity: canContinue ? 1 : 0.4,
-          }}
-        >
-          Continue →
-        </button>
       </div>
     );
   }
 
-  // ──── HOME ────
-  return (
-    <div style={base} className="lc-fade">
-      {/* Credits pill */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          padding: '16px 18px 0',
-        }}
-      >
-        <button
-          onClick={() => setShowModal(true)}
-          style={{
-            background: `${G.gold}18`,
-            border: `1px solid ${G.gold}40`,
-            borderRadius: 20,
-            padding: '6px 16px',
-            cursor: 'pointer',
-            color: G.goldLight,
-            fontSize: 13,
-            fontFamily: "'DM Sans',sans-serif",
-          }}
-        >
-          ⚡ {credits} credits this week
-        </button>
+  // HISTORY LIST
+  if (screen==="history") return (
+    <div style={{...S.app,padding:"0 0 32px"}} className="fade">
+      <div style={{background:G.primary,padding:"16px 18px",display:"flex",alignItems:"center",gap:12}}>
+        <button onClick={()=>setScreen("home")} style={{background:"none",border:"none",color:"#fff",fontSize:13}}>← Back</button>
+        <span style={{color:"#fff",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:16}}>Lesson History</span>
       </div>
-
-      {/* Hero */}
-      <div style={{ padding: '36px 20px 28px', textAlign: 'center' }}>
-        <div
-          style={{
-            width: 68,
-            height: 68,
-            borderRadius: 20,
-            background: `linear-gradient(135deg,${G.gold},${G.goldLight})`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 18px',
-            fontSize: 30,
-            boxShadow: `0 10px 40px ${G.gold}50`,
-          }}
-        >
-          📝
-        </div>
-        <h1
-          style={{
-            fontFamily: "'Playfair Display',serif",
-            fontSize: 34,
-            lineHeight: 1.15,
-            marginBottom: 10,
-          }}
-        >
-          LessonCraft
-          <br />
-          <em style={{ color: G.gold }}>AI</em>
-        </h1>
-        <p
-          style={{
-            color: G.muted,
-            fontSize: 14,
-            maxWidth: 290,
-            margin: '0 auto',
-            lineHeight: 1.65,
-          }}
-        >
-          Professional, curriculum-aligned lesson plans — generated in seconds
-        </p>
-      </div>
-
-      {/* Mode Cards */}
-      <div style={{ padding: '0 18px 32px' }}>
-        <p
-          style={{
-            fontSize: 11,
-            color: G.muted,
-            textTransform: 'uppercase',
-            letterSpacing: '.12em',
-            marginBottom: 14,
-          }}
-        >
-          Choose your mode
-        </p>
-
-        {[
-          {
-            id: 1,
-            icon: '📋',
-            color: G.gold,
-            title: 'Template Mode',
-            desc: 'Upload your own template. AI reads its structure and fills every section with rich, curriculum-aligned content.',
-            tag: 'Best for structured formats',
-          },
-          {
-            id: 2,
-            icon: '💬',
-            color: G.blue,
-            title: 'Free Input Mode',
-            desc: 'Just describe what you need. AI builds a complete lesson plan from scratch, tailored to your students.',
-            tag: 'Best for quick creation',
-          },
-        ].map((m) => (
-          <div
-            key={m.id}
-            className="lc-mode"
-            onClick={() => {
-              setMode(m.id);
-              setScreen('setup');
-            }}
-            style={{
-              ...card(),
-              marginBottom: 14,
-              cursor: 'pointer',
-              transition: 'all .2s',
-              borderColor: `${m.color}40`,
-            }}
-          >
-            <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-              <div
-                style={{
-                  width: 46,
-                  height: 46,
-                  borderRadius: 13,
-                  flexShrink: 0,
-                  background: `${m.color}20`,
-                  border: `1px solid ${m.color}40`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 22,
-                }}
-              >
-                {m.icon}
+      <div style={{padding:"16px"}}>
+        {history.length===0 ? (
+          <div style={{textAlign:"center",padding:"60px 20px",color:G.muted}}>
+            <div style={{fontSize:40,marginBottom:12}}>📋</div>
+            <p style={{fontWeight:600}}>No history yet</p>
+            <p style={{fontSize:13,marginTop:4}}>Your generated lesson plans will appear here</p>
+          </div>
+        ) : history.map(h=>(
+          <div key={h.id} onClick={()=>setViewingHistory(h)} style={{...S.card,marginBottom:10,cursor:"pointer",transition:"box-shadow .15s"}} className="lc-card">
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+              <div style={{flex:1,minWidth:0}}>
+                <p style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:600,fontSize:14,marginBottom:4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{h.title||"Lesson Plan"}</p>
+                <p style={{fontSize:12,color:G.muted}}>{h.ageLevel} · {h.frameworks.split(",")[0]}{h.frameworks.includes(",")?" +more":""}</p>
               </div>
-              <div>
-                <h3
-                  style={{
-                    fontFamily: "'Playfair Display',serif",
-                    fontSize: 17,
-                    marginBottom: 5,
-                  }}
-                >
-                  {m.title}
-                </h3>
-                <p style={{ color: G.muted, fontSize: 13, lineHeight: 1.65 }}>
-                  {m.desc}
-                </p>
-                <span
-                  style={{
-                    display: 'inline-block',
-                    marginTop: 10,
-                    background: `${m.color}18`,
-                    borderRadius: 6,
-                    padding: '3px 10px',
-                    color: m.color,
-                    fontSize: 11,
-                    fontWeight: 600,
-                    letterSpacing: '.05em',
-                  }}
-                >
-                  {m.tag.toUpperCase()}
-                </span>
+              <div style={{textAlign:"right",flexShrink:0,marginLeft:10}}>
+                <p style={{fontSize:11,color:G.muted}}>{h.date}</p>
+                <span style={{background:G.accentLight,color:G.primary,fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:10,display:"inline-block",marginTop:3}}>{h.mode}</span>
               </div>
             </div>
           </div>
         ))}
       </div>
+    </div>
+  );
 
-      {/* Credits Modal */}
-      {showModal && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: '#00000095',
-            zIndex: 200,
-            display: 'flex',
-            alignItems: 'flex-end',
-          }}
-          onClick={() => setShowModal(false)}
-        >
-          <div
-            style={{
-              ...card(),
-              width: '100%',
-              borderRadius: '20px 20px 0 0',
-              padding: '28px 20px 36px',
-              animation: 'slideUp .3s ease',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                marginBottom: 20,
-              }}
-            >
-              <div>
-                <h3
-                  style={{
-                    fontFamily: "'Playfair Display',serif",
-                    fontSize: 20,
-                  }}
-                >
-                  Your Credits
-                </h3>
-                <p style={{ color: G.muted, fontSize: 13, marginTop: 3 }}>
-                  <strong style={{ color: G.goldLight }}>
-                    {credits} credits
-                  </strong>{' '}
-                  remaining this week — resets every Monday
-                </p>
+  // CHAT SCREEN (Free Input Mode)
+  if (screen==="chat") {
+    const canSend = chatInput.trim().length>2 && !isLoading;
+    return (
+      <div style={{...S.app,display:"flex",flexDirection:"column",height:"100vh"}} className="fade">
+        {/* Header */}
+        <div style={{background:G.primary,padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+          <button onClick={resetToHome} style={{background:"none",border:"none",color:"#fff",fontSize:13}}>← Back</button>
+          <div style={{textAlign:"center"}}>
+            <p style={{color:"#fff",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:14}}>Free Input Mode</p>
+            <p style={{color:"rgba(255,255,255,.7)",fontSize:11}}>{frameworks.slice(0,2).join(", ")}{frameworks.length>2?" +more":""} · {AGE_LEVELS.find(a=>a.value===ageLevel)?.label}</p>
+          </div>
+          <button onClick={()=>setShowModal(true)} style={{background:"rgba(255,255,255,.2)",border:"1px solid rgba(255,255,255,.3)",borderRadius:14,padding:"4px 10px",color:"#fff",fontSize:12,fontFamily:"'DM Sans',sans-serif"}}>⚡{credits}</button>
+        </div>
+
+        {/* Messages */}
+        <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:12}}>
+          {messages.length===0 && (
+            <div style={{textAlign:"center",padding:"32px 20px",color:G.muted}} className="fade">
+              <div style={{fontSize:36,marginBottom:10}}>💬</div>
+              <p style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:16,color:G.primary,marginBottom:6}}>Describe your lesson</p>
+              <p style={{fontSize:13,lineHeight:1.6}}>Tell me the topic, grade, duration, and any specific goals. You can refine it after!</p>
+              <div style={{background:G.accentLight,borderRadius:10,padding:"12px",marginTop:16,textAlign:"left"}}>
+                <p style={{fontSize:12,color:G.primary,fontWeight:600,marginBottom:4}}>Example:</p>
+                <p style={{fontSize:12,color:G.muted,lineHeight:1.6}}>"A 45-minute lesson on the water cycle for Grade 5. Include a hands-on activity and group work."</p>
               </div>
-              <button
-                onClick={() => setShowModal(false)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: G.muted,
-                  cursor: 'pointer',
-                  fontSize: 22,
-                }}
-              >
-                ×
-              </button>
             </div>
-
-            {/* Watch Ad */}
-            <div
-              style={{
-                background: G.surface,
-                borderRadius: 12,
-                padding: '14px 16px',
-                marginBottom: 16,
-                border: `1px solid ${G.border}`,
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
-                <div>
-                  <p style={{ fontWeight: 600, marginBottom: 3 }}>
-                    📺 Watch an Ad
-                  </p>
-                  <p style={{ color: G.muted, fontSize: 12 }}>
-                    Earn 1 free credit · Takes 5 seconds
-                  </p>
-                  {adDone && (
-                    <p style={{ color: '#60d080', fontSize: 12, marginTop: 4 }}>
-                      ✓ Credit added!
-                    </p>
-                  )}
-                </div>
-                <button
-                  onClick={watchAd}
-                  disabled={adTimer !== null}
-                  style={{ ...btn('gold'), padding: '9px 18px', fontSize: 13 }}
-                >
-                  {adTimer !== null ? `${adTimer}s…` : 'Watch'}
-                </button>
-              </div>
-              {adTimer !== null && (
-                <div
-                  style={{
-                    marginTop: 10,
-                    height: 4,
-                    borderRadius: 2,
-                    background: G.border,
-                  }}
-                >
-                  <div
-                    style={{
-                      height: '100%',
-                      borderRadius: 2,
-                      background: G.gold,
-                      width: `${((5 - adTimer) / 5) * 100}%`,
-                      transition: 'width 1s linear',
-                    }}
-                  />
+          )}
+          {messages.map((m,i)=>(
+            <div key={i} className="msg" style={{display:"flex",flexDirection:"column",alignItems:m.role==="user"?"flex-end":"flex-start"}}>
+              {m.role==="user" ? (
+                <div style={{background:G.primary,color:"#fff",borderRadius:"16px 16px 4px 16px",padding:"10px 14px",maxWidth:"82%",fontSize:14,lineHeight:1.6}}>{m.content}</div>
+              ) : (
+                <div style={{maxWidth:"92%"}}>
+                  <div style={{background:G.white,border:`1px solid ${G.border}`,borderRadius:"16px 16px 16px 4px",padding:"14px",fontSize:13.5,lineHeight:1.8,color:G.text}}>
+                    {m.content.split(/\n##\s+/).filter(Boolean).map((s,j)=>{
+                      const nl=s.indexOf("\n"); const title=nl>-1?s.slice(0,nl):s; const body=nl>-1?s.slice(nl+1):"";
+                      return (
+                        <div key={j} style={{marginBottom:j>0?14:0}}>
+                          {j>0&&<h4 style={{color:G.primary,fontSize:13,fontWeight:700,fontFamily:"'Plus Jakarta Sans',sans-serif",marginBottom:4,borderBottom:`1px solid ${G.accentLight}`,paddingBottom:3}}>{title}</h4>}
+                          {j===0&&!title.startsWith("#")&&<p style={{whiteSpace:"pre-wrap"}}>{s}</p>}
+                          {j>0&&<p style={{color:G.text,whiteSpace:"pre-wrap",fontSize:13}}>{body}</p>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <button onClick={()=>downloadText(m.content)} style={{background:"none",border:"none",color:G.primary,fontSize:12,fontWeight:600,marginTop:6,padding:"2px 4px",display:"flex",alignItems:"center",gap:4}}>↓ Download this plan</button>
                 </div>
               )}
             </div>
+          ))}
+          {isLoading && (
+            <div className="msg" style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:G.white,border:`1px solid ${G.border}`,borderRadius:12,width:"fit-content"}}>
+              <div style={{width:16,height:16,borderRadius:"50%",border:`2px solid ${G.border}`,borderTopColor:G.primary,animation:"spin 1s linear infinite"}}/>
+              <span style={{fontSize:13,color:G.muted}}>Writing your lesson plan…</span>
+            </div>
+          )}
+          {error && <div style={{background:"#fff0f0",border:"1px solid #fcc",borderRadius:10,padding:"10px 14px",color:G.red,fontSize:13}}>{error}</div>}
+          <div ref={chatEndRef}/>
+        </div>
 
-            {/* Upgrade */}
-            <p
-              style={{
-                fontSize: 11,
-                color: G.muted,
-                textTransform: 'uppercase',
-                letterSpacing: '.1em',
-                marginBottom: 12,
-              }}
-            >
-              Upgrade Plans
-            </p>
-            {PLANS.map((p) => (
-              <div
-                key={p.name}
-                style={{
-                  background: p.popular ? `${G.gold}10` : G.surface,
-                  border: `1px solid ${p.popular ? G.gold : G.border}`,
-                  borderRadius: 10,
-                  padding: '12px 16px',
-                  marginBottom: 10,
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
+        {/* Attach files */}
+        <div style={{padding:"0 12px 4px",flexShrink:0}}>
+          <input type="file" ref={extraRef} multiple onChange={e=>setExtraFiles([...e.target.files])} style={{display:"none"}}/>
+          {extraFiles.length>0 && <p style={{fontSize:11,color:G.primary,marginBottom:4}}>📎 {extraFiles.length} file(s) attached</p>}
+        </div>
+
+        {/* Input bar */}
+        <div style={{padding:"8px 12px 16px",background:G.white,borderTop:`1px solid ${G.border}`,flexShrink:0,display:"flex",gap:8,alignItems:"flex-end"}}>
+          <button onClick={()=>extraRef.current.click()} style={{background:G.accentLight,border:"none",borderRadius:10,padding:"10px",color:G.primary,flexShrink:0,fontSize:16}}>📎</button>
+          <textarea
+            value={chatInput}
+            onChange={e=>setChatInput(e.target.value)}
+            onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChat();}}}
+            placeholder={messages.length===0?"Describe your lesson…":"Follow up or ask to refine…"}
+            style={{flex:1,minHeight:42,maxHeight:120,background:G.surface,border:`1px solid ${G.border}`,borderRadius:10,padding:"10px 12px",fontFamily:"'DM Sans',sans-serif",fontSize:14,resize:"none",color:G.text,lineHeight:1.5}}
+            rows={1}
+          />
+          <button onClick={sendChat} disabled={!canSend} style={{background:canSend?G.primary:G.border,border:"none",borderRadius:10,padding:"10px 14px",color:"#fff",fontWeight:700,fontSize:16,flexShrink:0}}>→</button>
+        </div>
+      </div>
+    );
+  }
+
+  // SETUP
+  if (screen==="setup") {
+    const grades = ageLevel?GRADE_MAP[ageLevel]:[];
+    const canContinue = frameworks.length>0&&ageLevel;
+    return (
+      <div style={{...S.app,padding:"0 0 32px"}} className="fade">
+        <div style={{background:G.primary,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+          <button onClick={()=>setScreen("home")} style={{background:"none",border:"none",color:"#fff",fontSize:13}}>← Back</button>
+          <span style={{color:"#fff",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:16}}>Lesson Setup</span>
+        </div>
+
+        <div style={{padding:"16px"}}>
+          <div style={{...S.card,marginBottom:14}}>
+            <span style={S.label}>Curriculum Framework(s)</span>
+            <p style={{fontSize:12,color:G.muted,marginBottom:10}}>Select all that apply</p>
+            <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
+              {FRAMEWORKS.map(fw=>(
+                <button key={fw} onClick={()=>toggleFw(fw)} style={S.chip(frameworks.includes(fw))}>{fw}</button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{...S.card,marginBottom:14}}>
+            <span style={S.label}>Age Level</span>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+              {AGE_LEVELS.map(al=>{
+                const on=ageLevel===al.value;
+                return (
+                  <button key={al.value} onClick={()=>{setAgeLevel(al.value);setGradeLevel("");}} style={{padding:"12px",borderRadius:10,border:`1.5px solid ${on?G.primary:G.border}`,background:on?G.accentLight:G.white,textAlign:"left",cursor:"pointer"}}>
+                    <div style={{fontSize:18,marginBottom:2}}>{al.emoji}</div>
+                    <div style={{fontSize:13,fontWeight:600,color:on?G.primary:G.text}}>{al.label}</div>
+                    <div style={{fontSize:11,color:G.muted}}>{al.sub}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {grades.length>0&&(
+            <div style={{...S.card,marginBottom:14}}>
+              <span style={S.label}>Grade Level <span style={{color:G.muted,textTransform:"none",letterSpacing:0,fontWeight:400}}>— optional</span></span>
+              <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
+                {grades.map(g=>(
+                  <button key={g} onClick={()=>setGradeLevel(gradeLevel===g?"":g)} style={S.chip(gradeLevel===g)}>{g}</button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <button onClick={()=>setScreen(mode===1?"input":"chat")} disabled={!canContinue} style={{...S.btnPrimary,opacity:canContinue?1:.4}}>
+            Continue →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // TEMPLATE INPUT
+  if (screen==="input") {
+    return (
+      <div style={{...S.app,padding:"0 0 32px"}} className="fade">
+        <div style={{background:G.primary,padding:"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <button onClick={()=>setScreen("setup")} style={{background:"none",border:"none",color:"#fff",fontSize:13}}>← Back</button>
+          <span style={{color:"#fff",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:16}}>Template Mode</span>
+          <button onClick={()=>setShowModal(true)} style={{background:"rgba(255,255,255,.2)",border:"1px solid rgba(255,255,255,.3)",borderRadius:14,padding:"4px 10px",color:"#fff",fontSize:12,fontFamily:"'DM Sans',sans-serif"}}>⚡{credits}</button>
+        </div>
+
+        <div style={{padding:"16px"}}>
+          {error&&<div style={{background:"#fff0f0",border:"1px solid #fcc",borderRadius:10,padding:"12px",marginBottom:14,color:G.red,fontSize:13}}>{error}</div>}
+
+          <div style={{...S.card,marginBottom:14}}>
+            <span style={S.label}>Your Lesson Plan Template *</span>
+            <input type="file" ref={templateRef} onChange={e=>setTemplateFile(e.target.files[0])} accept=".txt,.doc,.docx" style={{display:"none"}}/>
+            <button onClick={()=>templateRef.current.click()} style={{...S.btnOutline,width:"100%",padding:"14px"}}>
+              {templateFile?`✓  ${templateFile.name}`:"📄  Upload Template (.txt / .docx)"}
+            </button>
+          </div>
+
+          <div style={{...S.card,marginBottom:14}}>
+            <span style={S.label}>Reference Files <span style={{color:G.muted,textTransform:"none",letterSpacing:0,fontWeight:400}}>— optional</span></span>
+            <input type="file" ref={extraRef} multiple onChange={e=>setExtraFiles([...e.target.files])} style={{display:"none"}}/>
+            <button onClick={()=>extraRef.current.click()} style={{...S.btnGhost,width:"100%",padding:"12px"}}>
+              {extraFiles.length>0?`📎  ${extraFiles.length} file(s) attached`:"+  Attach Textbook Pages or Notes"}
+            </button>
+          </div>
+
+          <button onClick={generateTemplate} disabled={!templateFile} style={{...S.btnPrimary,opacity:templateFile?1:.4}}>
+            Generate & Fill Template (1 credit)
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // HOME
+  return (
+    <div style={S.app} className="fade">
+      {/* Header */}
+      <div style={{background:G.white,borderBottom:`1px solid ${G.border}`,padding:"14px 18px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <img src={LOGO_URL} alt="Dar Al-Thikr" style={{height:36,objectFit:"contain"}} onError={e=>{e.target.style.display='none';}}/>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>setScreen("history")} style={{...S.btnGhost,padding:"7px 12px",fontSize:13}}>📋 History</button>
+          <button onClick={()=>setShowModal(true)} style={{background:G.accentLight,border:`1px solid ${G.border}`,borderRadius:10,padding:"7px 12px",color:G.primary,fontSize:13,fontWeight:600,fontFamily:"'DM Sans',sans-serif"}}>⚡{credits}</button>
+        </div>
+      </div>
+
+      {/* Hero */}
+      <div style={{padding:"28px 18px 20px",textAlign:"center",background:`linear-gradient(180deg, ${G.white} 0%, ${G.bg} 100%)`}}>
+        <div style={{width:60,height:60,borderRadius:18,background:G.primary,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",fontSize:28,boxShadow:`0 8px 24px ${G.primary}30`}}>📝</div>
+        <h1 style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:800,fontSize:26,color:G.primary,marginBottom:8}}>LessonCraft AI</h1>
+        <p style={{color:G.muted,fontSize:14,lineHeight:1.65,maxWidth:300,margin:"0 auto"}}>Turn your teaching ideas into brilliant, curriculum-ready lesson plans — in seconds! ✨</p>
+        <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:12,flexWrap:"wrap"}}>
+          {["📚 All Frameworks","⚡ AI Powered","🏫 Dar Al-Thikr"].map(t=>(
+            <span key={t} style={{background:G.accentLight,color:G.primary,fontSize:11,fontWeight:600,padding:"4px 10px",borderRadius:12}}>{t}</span>
+          ))}
+        </div>
+      </div>
+
+      {/* Mode Cards */}
+      <div style={{padding:"0 16px 32px"}}>
+        <p style={{fontSize:11,color:G.muted,textTransform:"uppercase",letterSpacing:".1em",marginBottom:12,fontWeight:600}}>Choose your mode</p>
+
+        {[
+          { id:1, icon:"📋", title:"Template Mode", desc:"Upload your school template. AI fills every section with rich, curriculum-aligned content — in your format.", tag:"Structured Format", color:G.primary },
+          { id:2, icon:"💬", title:"Free Input Mode", desc:"Just chat! Describe your lesson and the AI builds it from scratch. Refine it in real-time conversation.", tag:"Quick & Flexible", color:"#2a6eb5" }
+        ].map(m=>(
+          <div key={m.id} onClick={()=>{setMode(m.id);setScreen("setup");}} style={{...S.card,marginBottom:12,cursor:"pointer",borderColor:G.border,transition:"all .15s",display:"flex",gap:14,alignItems:"flex-start"}}>
+            <div style={{width:48,height:48,borderRadius:13,background:m.id===1?G.accentLight:"#e8f0fb",border:`1px solid ${m.id===1?G.border:"#c0d4f0"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{m.icon}</div>
+            <div>
+              <h3 style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:16,color:G.text,marginBottom:4}}>{m.title}</h3>
+              <p style={{color:G.muted,fontSize:13,lineHeight:1.6}}>{m.desc}</p>
+              <span style={{display:"inline-block",marginTop:8,background:m.id===1?G.accentLight:"#e8f0fb",borderRadius:6,padding:"3px 10px",color:m.id===1?G.primary:"#2a6eb5",fontSize:11,fontWeight:700}}>{m.tag.toUpperCase()}</span>
+            </div>
+          </div>
+        ))}
+
+        {history.length>0&&(
+          <div style={{...S.card,background:G.accentLight,borderColor:G.border}}>
+            <p style={{fontSize:12,fontWeight:600,color:G.primary,marginBottom:8}}>📋 Recent Lesson Plans</p>
+            {history.slice(0,2).map(h=>(
+              <div key={h.id} onClick={()=>setViewingHistory(h)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${G.border}`,cursor:"pointer"}}>
                 <div>
-                  <p style={{ fontWeight: 600, fontSize: 14 }}>
-                    {p.name}{' '}
-                    {p.popular && (
-                      <span style={{ color: G.gold, fontSize: 11 }}>
-                        ★ Popular
-                      </span>
-                    )}
-                  </p>
-                  <p style={{ color: G.muted, fontSize: 12 }}>
-                    {p.credits} credits · {p.note}
-                  </p>
+                  <p style={{fontSize:13,fontWeight:600,color:G.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:220}}>{h.title}</p>
+                  <p style={{fontSize:11,color:G.muted}}>{h.ageLevel} · {h.date}</p>
                 </div>
-                <button
-                  style={{
-                    ...btn('outline'),
-                    padding: '8px 16px',
-                    fontSize: 13,
-                  }}
-                >
-                  {p.price}
-                </button>
+                <span style={{color:G.primary,fontSize:13}}>→</span>
               </div>
             ))}
+            <button onClick={()=>setScreen("history")} style={{background:"none",border:"none",color:G.primary,fontSize:12,fontWeight:600,marginTop:8,padding:0}}>View all history →</button>
+          </div>
+        )}
+      </div>
+
+      {/* Credits Modal */}
+      {showModal&&(
+        <div style={{position:"fixed",inset:0,background:"#00000070",zIndex:200,display:"flex",alignItems:"flex-end"}} onClick={()=>setShowModal(false)}>
+          <div style={{...S.card,width:"100%",maxWidth:480,margin:"0 auto",borderRadius:"20px 20px 0 0",padding:"24px 20px 36px",animation:"slideUp .3s ease"}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+              <div>
+                <h3 style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:18}}>Your Credits</h3>
+                <p style={{color:G.muted,fontSize:13,marginTop:2}}><strong style={{color:G.primary}}>{credits} credits</strong> left this week · resets Monday</p>
+              </div>
+              <button onClick={()=>setShowModal(false)} style={{background:"none",border:"none",color:G.muted,fontSize:22}}>×</button>
+            </div>
+
+            <div style={{background:G.accentLight,border:`1px solid ${G.border}`,borderRadius:12,padding:"14px 16px",marginBottom:12}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div>
+                  <p style={{fontWeight:600,fontSize:14,marginBottom:2}}>📺 Watch an Ad</p>
+                  <p style={{color:G.muted,fontSize:12}}>Earn 1 free credit · 5 seconds</p>
+                  {adDone&&<p style={{color:G.primary,fontSize:12,marginTop:3,fontWeight:600}}>✓ Credit added!</p>}
+                </div>
+                <button onClick={watchAd} disabled={adTimer!==null} style={{background:G.primary,color:"#fff",border:"none",borderRadius:8,padding:"10px 18px",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:13}}>
+                  {adTimer!==null?`${adTimer}s…`:"Watch"}
+                </button>
+              </div>
+              {adTimer!==null&&(
+                <div style={{marginTop:10,height:4,borderRadius:2,background:G.border}}>
+                  <div style={{height:"100%",borderRadius:2,background:G.primary,width:`${((5-adTimer)/5)*100}%`,transition:"width 1s linear"}}/>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
