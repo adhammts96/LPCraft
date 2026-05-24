@@ -1,4 +1,3 @@
-// @ts-nocheck 
 // @ts-nocheck
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
@@ -11,951 +10,1006 @@ const supabase = createClient(
 const LOGO_URL = "https://althikr.edu.sa/wp-content/uploads/2025/03/DASC_Horizontal-Logo-EN-250x82-1.png";
 const API_URL = `${window.location.origin}/api/generate`;
 
-const TRANSLATIONS = {
-  en: {
-    tagline: "Turn your teaching ideas into brilliant lesson plans — in seconds! ✨",
-    chooseMode: "Choose your mode",
-    templateMode: "Template Mode",
-    templateDesc: "Upload your school template. AI fills every section with rich, curriculum-aligned content.",
-    templateTag: "Structured Format",
-    freeMode: "Free Input Mode",
-    freeDesc: "Just chat! Describe your lesson and AI builds it from scratch. Refine in real-time.",
-    freeTag: "Quick & Flexible",
-    americanMode: "American Pathway",
-    americanDesc: "Dar Al-Thikr's official 5Es template — AI fills it completely in English or Arabic.",
-    americanTag: "Dar Al-Thikr Official",
-    history: "History",
-    signOut: "Sign Out",
-    credits: "credits",
-    back: "← Back",
-    continue: "Continue →",
-    generate: "Generate Lesson Plan (1 credit)",
-    download: "↓ Download",
-    creating: "Another",
-    welcome: "Welcome back! 👋",
-    noHistory: "No history yet",
-    noHistoryDesc: "Your generated lesson plans will appear here",
-    lessonReady: "Lesson Plan Ready ✓",
-    building: "Building your lesson plan…",
-    poweredBy: "Powered by Claude AI",
-    describeLesson: "Describe your lesson",
-    describeHint: "Tell me the topic, grade, duration, and any goals. Refine it after!",
-    example: "Example",
-    exampleText: "A 45-min lesson on the water cycle for Grade 5. Include a hands-on activity.",
-    followUp: "Follow up or ask to refine…",
-    downloading: "↓ Download this plan",
-    attachFiles: "📎",
-    send: "→",
-    selectFrameworks: "Curriculum Framework(s)",
-    selectAll: "Select all that apply",
-    ageLevel: "Age Level",
-    gradeLevel: "Grade Level",
-    optional: "— optional",
-    yourTemplate: "Your Template *",
-    uploadTemplate: "📄  Upload Template (.txt / .docx)",
-    refFiles: "Reference Files",
-    attachRef: "+  Attach Reference Files",
-    signIn: "Sign In",
-    signUp: "Sign Up",
-    email: "Email address",
-    password: "Password",
-    fullName: "Full Name",
-    signInBtn: "Sign In →",
-    signUpBtn: "Create Account →",
-    pleaseWait: "Please wait…",
-    noAccount: "Don't have an account?",
-    haveAccount: "Already have an account?",
-    emailConfirm: "Account created! Please check your email to verify.",
-    watchAd: "📺 Watch an Ad",
-    watchAdDesc: "Earn 1 free credit · 5 seconds",
-    creditAdded: "✓ Credit added!",
-    watch: "Watch",
-    yourCredits: "Your Credits",
-    creditsLeft: "left this week · resets Monday",
-    viewAll: "View all →",
-    recentPlans: "📋 Recent Lesson Plans",
-    pastPlan: "Past Lesson Plan",
-    lessonSetup: "Lesson Setup",
-    americanSetup: "American Pathway Setup",
-    subject: "Subject / Course",
-    subjectHint: "e.g. Wonders McGraw-Hill, Math, Science",
-    topic: "Lesson Topic",
-    topicHint: "e.g. Expository Writing, Fractions, Ecosystems",
-    classField: "Class",
-    classHint: "e.g. 4A / 4B",
-    unit: "Unit",
-    unitHint: "e.g. Unit 2",
-    lessonNum: "Lesson Number(s)",
-    lessonNumHint: "e.g. Lessons 7, 8, 9",
-    week: "Week",
-    weekHint: "e.g. Week 10",
-    standards: "Standards / Objectives",
-    standardsHint: "e.g. W.4.2 – Refer to details and examples...",
-    duration: "Lesson Duration",
-    outputLang: "Generate lesson plan in:",
-    english: "English",
-    arabic: "Arabic",
-    generateAmerican: "Generate American Pathway Plan (1 credit)",
+// ── Markdown to HTML ──
+const mdToHtml = (text) => {
+  if (!text) return "";
+  let html = text
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/^#### (.+)$/gm,"<h4>$1</h4>")
+    .replace(/^### (.+)$/gm,"<h3>$1</h3>")
+    .replace(/^## (.+)$/gm,"<h2>$1</h2>")
+    .replace(/^# (.+)$/gm,"<h1>$1</h1>")
+    .replace(/\*\*\*(.+?)\*\*\*/g,"<strong><em>$1</em></strong>")
+    .replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>")
+    .replace(/\*([^*\n]+?)\*/g,"<em>$1</em>")
+    .replace(/^✔ (.+)$/gm,"<li class='check'>✔ $1</li>")
+    .replace(/^✓ (.+)$/gm,"<li class='check'>✓ $1</li>")
+    .replace(/^\□ (.+)$/gm,"<li class='checkbox'>☐ $1</li>")
+    .replace(/^[-•] (.+)$/gm,"<li>$1</li>")
+    .replace(/^\d+\. (.+)$/gm,"<li>$1</li>")
+    .replace(/^---+$/gm,"<hr/>")
+    .replace(/\n{2,}/g,"</p><p>")
+    .replace(/\n/g,"<br/>");
+  return html;
+};
+
+// ── CSS for rendered content ──
+const contentCSS = (isAr=false,primary="#1a6b42") => `
+  font-family: ${isAr?"'Noto Kufi Arabic', sans-serif":"Calibri, 'Segoe UI', sans-serif"};
+  font-size: 14px; line-height: 1.85; color: #1a2a1a; direction: ${isAr?"rtl":"ltr"};
+  h1{font-size:20px;color:${primary};font-weight:800;margin:0 0 8px;padding-bottom:6px;border-bottom:3px solid #e8f5ee;}
+  h2{font-size:15px;color:${primary};font-weight:700;margin:20px 0 6px;padding-bottom:4px;border-bottom:2px solid #e8f5ee;}
+  h3{font-size:13.5px;color:${primary};font-weight:700;margin:14px 0 4px;}
+  h4{font-size:13px;color:#2a5a3a;font-weight:600;margin:10px 0 3px;}
+  p{margin:0 0 10px;}
+  li{margin:3px 0 3px 20px;list-style:disc;}
+  li.check{list-style:none;margin-left:0;}
+  strong{font-weight:700;color:#0f2018;}
+  em{font-style:italic;}
+  hr{border:none;border-top:1px solid #cce4d8;margin:16px 0;}
+`;
+
+// ── Word HTML wrapper ──
+const makeWordHTML = (bodyContent, title="Lesson Plan", isAr=false) => {
+  const dir = isAr ? "rtl" : "ltr";
+  const ff = isAr ? "'Arial Unicode MS', Arial" : "Calibri, Arial";
+  return `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head><meta charset='utf-8'><title>${title}</title>
+<style>
+  body{font-family:${ff};font-size:11pt;color:#1a2a1a;line-height:1.8;direction:${dir};margin:1.2cm 1.5cm;}
+  h1{font-size:16pt;color:#1a6b42;font-weight:bold;border-bottom:2pt solid #cce4d8;padding-bottom:4pt;margin:0 0 10pt;}
+  h2{font-size:13pt;color:#1a6b42;font-weight:bold;border-bottom:1pt solid #e8f5ee;padding-bottom:2pt;margin:14pt 0 6pt;}
+  h3{font-size:11.5pt;color:#1a6b42;font-weight:bold;margin:10pt 0 4pt;}
+  h4{font-size:11pt;color:#2a5a3a;font-weight:bold;margin:8pt 0 3pt;}
+  p{margin:0 0 7pt;}
+  li{margin:2pt 0 2pt 16pt;}
+  li.check{list-style:none;margin-left:0;}
+  table{width:100%;border-collapse:collapse;margin:10pt 0;}
+  td,th{border:1pt solid #cce4d8;padding:5pt 8pt;font-size:10pt;vertical-align:top;}
+  th{background:#e8f5ee;font-weight:bold;color:#1a6b42;}
+  .brand{font-size:18pt;font-weight:bold;color:#1a6b42;}
+  .footer{margin-top:30pt;padding-top:8pt;border-top:1pt solid #cce4d8;font-size:9pt;color:#5a7a68;}
+  .section-box{border:1pt solid #e8f5ee;padding:8pt;margin:8pt 0;border-radius:4pt;}
+  hr{border:none;border-top:1pt solid #cce4d8;}
+  strong{font-weight:bold;}
+  em{font-style:italic;}
+</style></head>
+<body>${bodyContent}
+<div class='footer'>Generated by EduBudd · Dar Al-Thikr School · Powered by Claude AI</div>
+</body></html>`;
+};
+
+// ── Print/PDF HTML wrapper ──
+const makePrintHTML = (bodyContent, title="Lesson Plan", isAr=false) => {
+  const dir = isAr ? "rtl" : "ltr";
+  const ff = isAr ? "'Noto Kufi Arabic', 'Arial Unicode MS', Arial" : "'Plus Jakarta Sans', Calibri, Arial";
+  return `<!DOCTYPE html><html dir='${dir}'>
+<head><meta charset='utf-8'><title>${title}</title>
+<link href='https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Noto+Kufi+Arabic:wght@400;600;700&display=swap' rel='stylesheet'>
+<style>
+  *{box-sizing:border-box;}
+  body{font-family:${ff};font-size:13px;color:#1a2a1a;line-height:1.85;direction:${dir};max-width:820px;margin:0 auto;padding:32px 40px;}
+  h1{font-size:22px;color:#1a6b42;font-weight:800;border-bottom:3px solid #e8f5ee;padding-bottom:8px;margin:0 0 16px;}
+  h2{font-size:15px;color:#1a6b42;font-weight:700;border-bottom:2px solid #e8f5ee;padding-bottom:4px;margin:20px 0 8px;}
+  h3{font-size:13.5px;color:#1a6b42;font-weight:700;margin:14px 0 4px;}
+  h4{font-size:13px;color:#2a5a3a;font-weight:600;margin:10px 0 3px;}
+  p{margin:0 0 10px;}
+  ul,ol{padding-left:${isAr?0:20}px;padding-right:${isAr?20:0}px;}
+  li{margin:3px 0;}
+  li.check{list-style:none;padding-left:0;}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:12px;}
+  td,th{border:1px solid #cce4d8;padding:6px 10px;vertical-align:top;}
+  th{background:#e8f5ee;font-weight:700;color:#1a6b42;}
+  .header{display:flex;align-items:center;gap:14px;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #e8f5ee;}
+  .brand{font-size:22px;font-weight:800;color:#1a6b42;}
+  .footer{margin-top:40px;padding-top:12px;border-top:1px solid #cce4d8;font-size:10px;color:#5a7a68;text-align:center;}
+  hr{border:none;border-top:1px solid #cce4d8;margin:14px 0;}
+  strong{font-weight:700;}
+  em{font-style:italic;}
+  @media print{body{padding:16px 20px;}@page{margin:1.5cm;size:A4;}}
+</style></head>
+<body>
+<div class='header'>
+  <div style='width:52px;height:52px;background:#1a6b42;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;'>👨‍🏫</div>
+  <div><div class='brand'>EduBudd</div><div style='font-size:11px;color:#5a7a68;'>Dar Al-Thikr School · AI Lesson Plan Generator</div></div>
+</div>
+${bodyContent}
+<div class='footer'>Generated by EduBudd · Powered by Claude AI · ${new Date().toLocaleDateString()}</div>
+<script>window.onload=()=>{window.print();}</script>
+</body></html>`;
+};
+
+// ── American Pathway Word Template ──
+const makeAPWordTemplate = (fields, aiContent, isAr=false) => {
+  const {subject,grade,cls,unit,lesson,week,topic,duration,standards,date} = fields;
+  const dir = isAr ? "rtl" : "ltr";
+  const contentHtml = mdToHtml(aiContent);
+
+  const headerTable = `
+<table>
+  <tr>
+    <th colspan='3' style='background:#1a6b42;color:white;text-align:center;font-size:12pt;'>
+      Lesson Plan — 5Es Student-Centered Approach
+    </th>
+  </tr>
+  <tr>
+    <td><strong>Course:</strong> ${subject||""}</td>
+    <td><strong>Instructor:</strong> ${fields.instructor||""}</td>
+    <td></td>
+  </tr>
+  <tr>
+    <td><strong>Date:</strong> ${date||new Date().toLocaleDateString()}</td>
+    <td><strong>Grade:</strong> ${grade||""}</td>
+    <td><strong>Class:</strong> ${cls||""}</td>
+  </tr>
+  <tr>
+    <td><strong>Unit:</strong> ${unit||""}</td>
+    <td><strong>Lesson:</strong> ${lesson||""}</td>
+    <td><strong>Week:</strong> ${week||""}</td>
+  </tr>
+  <tr>
+    <td colspan='3'><strong>Topic:</strong> ${topic||""}</td>
+  </tr>
+  <tr>
+    <td colspan='3'><strong>Duration:</strong> ${duration||"45 minutes"}</td>
+  </tr>
+</table>`;
+
+  const structureTable = `
+<table style='margin-top:8pt;'>
+  <tr>
+    <th style='background:#2e8b5a;color:white;'>Beginning</th>
+    <th style='background:#2e8b5a;color:white;'>Middle</th>
+    <th style='background:#2e8b5a;color:white;'>End</th>
+  </tr>
+  <tr>
+    <td>Engage, Explore</td>
+    <td>Explain, Elaborate</td>
+    <td>Evaluate</td>
+  </tr>
+  <tr>
+    <td>Introduction<br/><em>Hook, Learning Intentions, Success Criteria, Prior Learning, Vocabulary</em></td>
+    <td>Presentation<br/><em>Explicit Skill &amp; Strategy Teaching</em><br/><br/>Guided Practice<br/><em>Small Group/Individual</em></td>
+    <td>Review<br/><em>Connection back to Learning Intentions, Exit Ticket</em></td>
+  </tr>
+</table>`;
+
+  const signatureRow = `
+<table style='margin-top:30pt;'>
+  <tr>
+    <td style='width:50%;'><strong>Teacher:</strong> ${fields.instructor||""}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+    <td style='width:50%;'><strong>Instructional Leader:</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+  </tr>
+</table>`;
+
+  const body = `
+${headerTable}
+${standards ? `<p style='margin-top:8pt;'><strong>Standards:</strong> ${standards}</p>` : ""}
+${structureTable}
+<div style='margin-top:16pt;'>${contentHtml}</div>
+${signatureRow}`;
+
+  return makeWordHTML(body, `${topic} - Grade ${grade}`, isAr);
+};
+
+// ── American Pathway PDF Template ──
+const makeAPPrintTemplate = (fields, aiContent, isAr=false) => {
+  const {subject,grade,cls,unit,lesson,week,topic,duration,standards,date} = fields;
+  const contentHtml = mdToHtml(aiContent);
+
+  const headerTable = `
+<table style='margin-bottom:16px;'>
+  <tr>
+    <th colspan='3' style='background:#1a6b42;color:white;text-align:center;font-size:15px;padding:10px;'>
+      Lesson Plan — 5Es Student-Centered Approach
+    </th>
+  </tr>
+  <tr>
+    <td><strong>Course:</strong> ${subject||""}</td>
+    <td><strong>Instructor:</strong> ${fields.instructor||""}</td>
+    <td></td>
+  </tr>
+  <tr>
+    <td><strong>Date:</strong> ${date||new Date().toLocaleDateString()}</td>
+    <td><strong>Grade:</strong> ${grade||""}</td>
+    <td><strong>Class:</strong> ${cls||""}</td>
+  </tr>
+  <tr>
+    <td><strong>Unit:</strong> ${unit||""}</td>
+    <td><strong>Lesson:</strong> ${lesson||""}</td>
+    <td><strong>Week:</strong> ${week||""}</td>
+  </tr>
+  <tr>
+    <td colspan='3'><strong>Topic:</strong> ${topic||""} &nbsp;&nbsp; <strong>Duration:</strong> ${duration||"45 min"}</td>
+  </tr>
+  ${standards?`<tr><td colspan='3'><strong>Standards:</strong> ${standards}</td></tr>`:""}
+</table>
+<table style='margin-bottom:16px;'>
+  <tr>
+    <th style='background:#2e8b5a;color:white;'>Beginning</th>
+    <th style='background:#2e8b5a;color:white;'>Middle</th>
+    <th style='background:#2e8b5a;color:white;'>End</th>
+  </tr>
+  <tr>
+    <td style='font-size:11px;'>Engage, Explore<br/><em>Introduction</em></td>
+    <td style='font-size:11px;'>Explain, Elaborate<br/><em>Presentation + Guided Practice</em></td>
+    <td style='font-size:11px;'>Evaluate<br/><em>Review + Exit Ticket</em></td>
+  </tr>
+</table>`;
+
+  const signatureRow = `
+<table style='margin-top:40px;'>
+  <tr>
+    <td style='border:none;width:50%;'><strong>Teacher:</strong> ${fields.instructor||""}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+    <td style='border:none;width:50%;'><strong>Instructional Leader:</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+  </tr>
+</table>`;
+
+  const body = `${headerTable}<div>${contentHtml}</div>${signatureRow}`;
+  return makePrintHTML(body, `${topic} - Grade ${grade}`, isAr);
+};
+
+// ── Export functions ──
+const doExportPDF = (content, title, isAr=false, fields=null) => {
+  const html = fields
+    ? makeAPPrintTemplate(fields, content, isAr)
+    : makePrintHTML(`<h1>${title}</h1>${mdToHtml(content)}`, title, isAr);
+  const w = window.open("","_blank");
+  w.document.write(html); w.document.close();
+};
+
+const doExportWord = (content, title, isAr=false, fields=null) => {
+  const html = fields
+    ? makeAPWordTemplate(fields, content, isAr)
+    : makeWordHTML(`<h1>${title}</h1>${mdToHtml(content)}`, title, isAr);
+  const blob = new Blob(["\ufeff"+html],{type:"application/msword"});
+  const a = document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`${title}.doc`; a.click();
+};
+
+// ── Translations ──
+const T = {
+  en:{
+    tagline:"Turn your teaching ideas into brilliant lesson plans — in seconds! ✨",
+    chooseMode:"Choose your mode",templateMode:"Template Mode",
+    templateDesc:"Upload your school template. AI fills every section with rich, curriculum-aligned content.",
+    templateTag:"Structured Format",freeMode:"Free Input Mode",
+    freeDesc:"Just chat! Describe your lesson and AI builds it from scratch. Refine in real-time.",
+    freeTag:"Quick & Flexible",americanMode:"American Pathway",
+    americanDesc:"Dar Al-Thikr's official 5Es template — exported as a filled Word or PDF document.",
+    americanTag:"Dar Al-Thikr Official",history:"History",signOut:"Sign Out",
+    credits:"credits",back:"← Back",continue:"Continue →",generate:"Generate (1 credit)",
+    download:"↓ .txt",welcome:"Welcome back! 👋",noHistory:"No history yet",
+    noHistoryDesc:"Your generated lesson plans will appear here",lessonReady:"Lesson Plan Ready ✓",
+    building:"Building your lesson plan…",poweredBy:"Powered by Claude AI",
+    describeLesson:"Describe your lesson",
+    describeHint:"Tell me the topic, grade, duration, and goals. Refine it after!",
+    example:"Example",exampleText:"A 45-min lesson on the water cycle for Grade 5. Include a hands-on activity.",
+    followUp:"Follow up or ask to refine…",send:"→",selectFrameworks:"Curriculum Framework(s)",
+    selectAll:"Select all that apply",ageLevel:"Age Level",gradeLevel:"Grade Level",
+    optional:"— optional",yourTemplate:"Your Template *",uploadTemplate:"📄  Upload Template (.txt / .docx)",
+    refFiles:"Reference Files",attachRef:"+  Attach Reference Files",
+    signIn:"Sign In",signUp:"Sign Up",email:"Email address",password:"Password",
+    fullName:"Full Name",signInBtn:"Sign In →",signUpBtn:"Create Account →",
+    pleaseWait:"Please wait…",noAccount:"Don't have an account?",haveAccount:"Already have an account?",
+    emailConfirm:"Account created! Check your email.",watchAd:"📺 Watch an Ad",
+    watchAdDesc:"Earn 1 free credit · 5 seconds",creditAdded:"✓ Credit added!",watch:"Watch",
+    yourCredits:"Your Credits",creditsLeft:"left this week · resets Monday",viewAll:"View all →",
+    recentPlans:"📋 Recent Lesson Plans",pastPlan:"Past Lesson Plan",lessonSetup:"Lesson Setup",
+    americanSetup:"American Pathway Setup",subject:"Subject / Course",
+    subjectHint:"e.g. Wonders McGraw-Hill, Math, Science",topic:"Lesson Topic",
+    topicHint:"e.g. Expository Writing, Fractions, Ecosystems",classField:"Class",
+    classHint:"e.g. 4A / 4B",unit:"Unit",unitHint:"e.g. Unit 2",instructor:"Instructor Name",
+    instructorHint:"Your full name",lessonNum:"Lesson Number(s)",lessonNumHint:"e.g. Lessons 7, 8, 9",
+    week:"Week",weekHint:"e.g. Week 10",standards:"Standards / Objectives",
+    standardsHint:"e.g. W.4.2 – Refer to details and examples...",duration:"Lesson Duration",
+    outputLang:"Generate lesson plan in:",english:"English",arabic:"Arabic",
+    generateAmerican:"Generate & Export American Pathway Plan (1 credit)",
+    outputFormat:"Output Format",formatChat:"💬 Chat",formatPDF:"📄 PDF",formatWord:"📝 Word",
+    exportAs:"Export as:",createAnother:"+ Create Another",
   },
-  ar: {
-    tagline: "حوّل أفكارك التدريسية إلى خطط دروس رائعة — في ثوانٍ! ✨",
-    chooseMode: "اختر الوضع",
-    templateMode: "وضع القالب",
-    templateDesc: "ارفع قالب مدرستك. يقوم الذكاء الاصطناعي بملء كل قسم بمحتوى غني ومتوافق مع المناهج.",
-    templateTag: "تنسيق منظم",
-    freeMode: "وضع الإدخال الحر",
-    freeDesc: "فقط تحدث! صف درسك ويبنيه الذكاء الاصطناعي من الصفر. نقّحه في الوقت الفعلي.",
-    freeTag: "سريع ومرن",
-    americanMode: "المسار الأمريكي",
-    americanDesc: "قالب دار الذكر الرسمي بنموذج 5Es — يملأه الذكاء الاصطناعي بالكامل بالعربية أو الإنجليزية.",
-    americanTag: "دار الذكر الرسمي",
-    history: "السجل",
-    signOut: "تسجيل الخروج",
-    credits: "رصيد",
-    back: "→ رجوع",
-    continue: "← متابعة",
-    generate: "إنشاء خطة الدرس (رصيد واحد)",
-    download: "↓ تحميل",
-    creating: "جديدة",
-    welcome: "أهلاً بك! 👋",
-    noHistory: "لا يوجد سجل بعد",
-    noHistoryDesc: "ستظهر هنا خطط الدروس التي أنشأتها",
-    lessonReady: "خطة الدرس جاهزة ✓",
-    building: "جارٍ بناء خطة درسك…",
-    poweredBy: "مدعوم بتقنية Claude AI",
-    describeLesson: "صف درسك",
-    describeHint: "أخبرني بالموضوع والصف والمدة وأي أهداف. نقّحها بعد ذلك!",
-    example: "مثال",
-    exampleText: "درس مدته 45 دقيقة حول دورة المياه للصف الخامس. تضمين نشاط عملي.",
-    followUp: "تابع أو اطلب التعديل…",
-    downloading: "↓ تحميل هذه الخطة",
-    attachFiles: "📎",
-    send: "←",
-    selectFrameworks: "إطار المنهج الدراسي",
-    selectAll: "اختر كل ما ينطبق",
-    ageLevel: "المرحلة العمرية",
-    gradeLevel: "الصف الدراسي",
-    optional: "— اختياري",
-    yourTemplate: "قالبك *",
-    uploadTemplate: "📄  ارفع القالب (.txt / .docx)",
-    refFiles: "ملفات مرجعية",
-    attachRef: "+  إرفاق ملفات مرجعية",
-    signIn: "تسجيل الدخول",
-    signUp: "إنشاء حساب",
-    email: "البريد الإلكتروني",
-    password: "كلمة المرور",
-    fullName: "الاسم الكامل",
-    signInBtn: "← تسجيل الدخول",
-    signUpBtn: "← إنشاء الحساب",
-    pleaseWait: "يرجى الانتظار…",
-    noAccount: "ليس لديك حساب؟",
-    haveAccount: "لديك حساب بالفعل؟",
-    emailConfirm: "تم إنشاء الحساب! يرجى التحقق من بريدك الإلكتروني.",
-    watchAd: "📺 شاهد إعلاناً",
-    watchAdDesc: "اكسب رصيداً مجانياً · 5 ثوانٍ",
-    creditAdded: "✓ تمت إضافة الرصيد!",
-    watch: "شاهد",
-    yourCredits: "رصيدك",
-    creditsLeft: "متبقٍ هذا الأسبوع · يُجدَّد الاثنين",
-    viewAll: "عرض الكل ←",
-    recentPlans: "📋 خطط الدروس الأخيرة",
-    pastPlan: "خطة درس سابقة",
-    lessonSetup: "إعداد الدرس",
-    americanSetup: "إعداد المسار الأمريكي",
-    subject: "المادة / المقرر",
-    subjectHint: "مثال: Wonders McGraw-Hill، الرياضيات، العلوم",
-    topic: "موضوع الدرس",
-    topicHint: "مثال: الكتابة التوضيحية، الكسور، النظم البيئية",
-    classField: "الفصل",
-    classHint: "مثال: 4A / 4B",
-    unit: "الوحدة",
-    unitHint: "مثال: الوحدة 2",
-    lessonNum: "رقم الدرس",
-    lessonNumHint: "مثال: الدروس 7، 8، 9",
-    week: "الأسبوع",
-    weekHint: "مثال: الأسبوع 10",
-    standards: "المعايير / الأهداف",
-    standardsHint: "مثال: W.4.2 – الرجوع إلى التفاصيل والأمثلة...",
-    duration: "مدة الدرس",
-    outputLang: "إنشاء خطة الدرس بـ:",
-    english: "الإنجليزية",
-    arabic: "العربية",
-    generateAmerican: "إنشاء خطة المسار الأمريكي (رصيد واحد)",
+  ar:{
+    tagline:"حوّل أفكارك التدريسية إلى خطط دروس رائعة — في ثوانٍ! ✨",
+    chooseMode:"اختر الوضع",templateMode:"وضع القالب",
+    templateDesc:"ارفع قالب مدرستك. يقوم الذكاء الاصطناعي بملء كل قسم بمحتوى غني.",
+    templateTag:"تنسيق منظم",freeMode:"وضع الإدخال الحر",
+    freeDesc:"فقط تحدث! صف درسك ويبنيه الذكاء الاصطناعي من الصفر.",
+    freeTag:"سريع ومرن",americanMode:"المسار الأمريكي",
+    americanDesc:"قالب دار الذكر الرسمي بنموذج 5Es — يُصدَّر كملف Word أو PDF مملوء.",
+    americanTag:"دار الذكر الرسمي",history:"السجل",signOut:"خروج",
+    credits:"رصيد",back:"→ رجوع",continue:"← متابعة",generate:"إنشاء (رصيد واحد)",
+    download:"↓ نص",welcome:"أهلاً بك! 👋",noHistory:"لا يوجد سجل بعد",
+    noHistoryDesc:"ستظهر هنا خطط الدروس التي أنشأتها",lessonReady:"خطة الدرس جاهزة ✓",
+    building:"جارٍ بناء خطة درسك…",poweredBy:"مدعوم بتقنية Claude AI",
+    describeLesson:"صف درسك",describeHint:"أخبرني بالموضوع والصف والمدة وأي أهداف.",
+    example:"مثال",exampleText:"درس مدته 45 دقيقة حول دورة المياه للصف الخامس.",
+    followUp:"تابع أو اطلب التعديل…",send:"←",selectFrameworks:"إطار المنهج الدراسي",
+    selectAll:"اختر كل ما ينطبق",ageLevel:"المرحلة العمرية",gradeLevel:"الصف الدراسي",
+    optional:"— اختياري",yourTemplate:"قالبك *",uploadTemplate:"📄  ارفع القالب",
+    refFiles:"ملفات مرجعية",attachRef:"+  إرفاق ملفات",
+    signIn:"تسجيل الدخول",signUp:"إنشاء حساب",email:"البريد الإلكتروني",
+    password:"كلمة المرور",fullName:"الاسم الكامل",signInBtn:"← تسجيل الدخول",
+    signUpBtn:"← إنشاء الحساب",pleaseWait:"يرجى الانتظار…",noAccount:"ليس لديك حساب؟",
+    haveAccount:"لديك حساب؟",emailConfirm:"تم إنشاء الحساب! تحقق من بريدك.",
+    watchAd:"📺 شاهد إعلاناً",watchAdDesc:"اكسب رصيداً مجانياً · 5 ثوانٍ",
+    creditAdded:"✓ تمت إضافة الرصيد!",watch:"شاهد",yourCredits:"رصيدك",
+    creditsLeft:"متبقٍ هذا الأسبوع · يُجدَّد الاثنين",viewAll:"عرض الكل ←",
+    recentPlans:"📋 خطط الدروس الأخيرة",pastPlan:"خطة درس سابقة",
+    lessonSetup:"إعداد الدرس",americanSetup:"إعداد المسار الأمريكي",
+    subject:"المادة / المقرر",subjectHint:"مثال: McGraw-Hill، الرياضيات",
+    topic:"موضوع الدرس",topicHint:"مثال: الكتابة التوضيحية، الكسور",
+    classField:"الفصل",classHint:"مثال: 4A / 4B",unit:"الوحدة",unitHint:"مثال: الوحدة 2",
+    instructor:"اسم المعلم",instructorHint:"اسمك الكامل",
+    lessonNum:"رقم الدرس",lessonNumHint:"مثال: الدروس 7، 8، 9",
+    week:"الأسبوع",weekHint:"مثال: الأسبوع 10",standards:"المعايير / الأهداف",
+    standardsHint:"مثال: W.4.2 – الرجوع إلى التفاصيل...",duration:"مدة الدرس",
+    outputLang:"إنشاء خطة الدرس بـ:",english:"الإنجليزية",arabic:"العربية",
+    generateAmerican:"إنشاء وتصدير خطة المسار الأمريكي (رصيد واحد)",
+    outputFormat:"صيغة الإخراج",formatChat:"💬 محادثة",formatPDF:"📄 PDF",formatWord:"📝 Word",
+    exportAs:"تصدير بصيغة:",createAnother:"+ خطة جديدة",
   }
 };
 
 const FRAMEWORKS = ["CCSS","Cambridge","IB","CELTA Style","5Es Model","SIOP","Bloom's Taxonomy","UbD","Montessori","STEAM","General English","Project-Based Learning","Competency-Based","Flipped Classroom"];
 const AGE_LEVELS = [
-  { label:"Early Childhood", labelAr:"الطفولة المبكرة", sub:"Ages 3–5", subAr:"3–5 سنوات", value:"early_childhood", emoji:"🌱" },
-  { label:"Primary", labelAr:"المرحلة الابتدائية", sub:"Ages 6–11", subAr:"6–11 سنة", value:"primary", emoji:"📚" },
-  { label:"Middle School", labelAr:"المرحلة الإعدادية", sub:"Ages 12–14", subAr:"12–14 سنة", value:"middle_school", emoji:"🔬" },
-  { label:"High School", labelAr:"المرحلة الثانوية", sub:"Ages 15–18", subAr:"15–18 سنة", value:"high_school", emoji:"🎓" },
-  { label:"Adult / Higher Ed", labelAr:"البالغون / التعليم العالي", sub:"18+", subAr:"18+", value:"adult", emoji:"🏛️" },
-  { label:"Mixed / Flexible", labelAr:"مختلط / مرن", sub:"Open range", subAr:"نطاق مفتوح", value:"mixed", emoji:"♾️" },
+  {label:"Early Childhood",labelAr:"الطفولة المبكرة",sub:"Ages 3–5",subAr:"3–5 سنوات",value:"early_childhood",emoji:"🌱"},
+  {label:"Primary",labelAr:"المرحلة الابتدائية",sub:"Ages 6–11",subAr:"6–11 سنة",value:"primary",emoji:"📚"},
+  {label:"Middle School",labelAr:"المرحلة الإعدادية",sub:"Ages 12–14",subAr:"12–14 سنة",value:"middle_school",emoji:"🔬"},
+  {label:"High School",labelAr:"المرحلة الثانوية",sub:"Ages 15–18",subAr:"15–18 سنة",value:"high_school",emoji:"🎓"},
+  {label:"Adult / Higher Ed",labelAr:"البالغون",sub:"18+",subAr:"18+",value:"adult",emoji:"🏛️"},
+  {label:"Mixed / Flexible",labelAr:"مختلط / مرن",sub:"Open range",subAr:"نطاق مفتوح",value:"mixed",emoji:"♾️"},
 ];
 const GRADE_MAP = {
-  early_childhood:["Pre-K","Kindergarten"],
-  primary:["Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6"],
-  middle_school:["Grade 7","Grade 8","Grade 9"],
-  high_school:["Grade 10","Grade 11","Grade 12"],
-  adult:["Undergraduate","Postgraduate","Professional","N/A"],
-  mixed:["N/A"]
+  early_childhood:["Pre-K","Kindergarten"],primary:["Grade 1","Grade 2","Grade 3","Grade 4","Grade 5","Grade 6"],
+  middle_school:["Grade 7","Grade 8","Grade 9"],high_school:["Grade 10","Grade 11","Grade 12"],
+  adult:["Undergraduate","Postgraduate","Professional","N/A"],mixed:["N/A"]
 };
 const DURATIONS = ["30 minutes","45 minutes","60 minutes","90 minutes","2 hours"];
-
-const G = {
-  bg:"#f4f9f6", white:"#ffffff", primary:"#1a6b42", accentLight:"#e8f5ee",
-  text:"#0f2018", muted:"#5a7a68", border:"#cce4d8", surface:"#edf6f1", red:"#e05555",
-};
+const G = {bg:"#f4f9f6",white:"#ffffff",primary:"#1a6b42",accentLight:"#e8f5ee",text:"#0f2018",muted:"#5a7a68",border:"#cce4d8",surface:"#edf6f1",red:"#e05555"};
 
 const injectStyles = () => {
   if (document.getElementById("lc-styles")) return;
   const s = document.createElement("style");
-  s.id = "lc-styles";
-  s.textContent = `
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500&family=Noto+Kufi+Arabic:wght@400;500;600;700&display=swap');
+  s.id="lc-styles";
+  s.textContent=`
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=Noto+Kufi+Arabic:wght@400;500;600;700&display=swap');
     *{box-sizing:border-box;margin:0;padding:0;}
+    html,body{height:100%;background:#f4f9f6;}
     @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
     @keyframes spin{to{transform:rotate(360deg)}}
     @keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
     @keyframes msgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
     .fade{animation:fadeUp .3s ease both;}
     .msg{animation:msgIn .25s ease both;}
-    ::-webkit-scrollbar{width:4px;}
-    ::-webkit-scrollbar-thumb{background:#cce4d8;border-radius:2px;}
+    ::-webkit-scrollbar{width:6px;}
+    ::-webkit-scrollbar-thumb{background:#cce4d8;border-radius:3px;}
     textarea:focus,input:focus,select:focus{outline:2px solid #4db87a;outline-offset:1px;}
+    .mode-card{transition:all .2s;}
+    .mode-card:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(26,107,66,.12);}
+    .rendered-content h1{font-size:18px;color:#1a6b42;font-weight:800;border-bottom:3px solid #e8f5ee;padding-bottom:6px;margin:0 0 12px;}
+    .rendered-content h2{font-size:15px;color:#1a6b42;font-weight:700;border-bottom:2px solid #e8f5ee;padding-bottom:3px;margin:18px 0 6px;}
+    .rendered-content h3{font-size:13.5px;color:#1a6b42;font-weight:700;margin:12px 0 4px;}
+    .rendered-content h4{font-size:13px;color:#2a5a3a;font-weight:600;margin:8px 0 3px;}
+    .rendered-content p{margin:0 0 8px;line-height:1.85;}
+    .rendered-content li{margin:3px 0 3px 18px;list-style:disc;line-height:1.7;}
+    .rendered-content li.check{list-style:none;margin-left:0;}
+    .rendered-content strong{font-weight:700;color:#0f2018;}
+    .rendered-content em{font-style:italic;}
+    .rendered-content hr{border:none;border-top:1px solid #cce4d8;margin:12px 0;}
   `;
   document.head.appendChild(s);
 };
 
+const TeacherIcon = ({size=60,color="#fff"}) => (
+  <svg width={size} height={size} viewBox="0 0 60 60" fill="none">
+    <circle cx="30" cy="16" r="9" fill={color}/>
+    <path d="M12 46C12 36 48 36 48 46V52H12V46Z" fill={color}/>
+    <rect x="6" y="28" width="18" height="14" rx="2" fill="none" stroke={color} strokeWidth="2"/>
+    <line x1="9" y1="33" x2="21" y2="33" stroke={color} strokeWidth="1.5"/>
+    <line x1="9" y1="37" x2="17" y2="37" stroke={color} strokeWidth="1.5"/>
+  </svg>
+);
+
 export default function App() {
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const isDesktop = windowWidth >= 768;
   const [lang, setLang] = useState("en");
-  const t = TRANSLATIONS[lang];
-  const isAr = lang === "ar";
-  const fontFamily = isAr ? "'Noto Kufi Arabic', sans-serif" : "'DM Sans', sans-serif";
-  const dir = isAr ? "rtl" : "ltr";
+  const t = T[lang]; const isAr = lang==="ar";
+  const fontFamily = isAr?"'Noto Kufi Arabic',sans-serif":"'DM Sans',sans-serif";
+  const dir = isAr?"rtl":"ltr";
 
-  const [user, setUser] = useState(null);
-  const [authLoading, setAuthLoading] = useState(true);
-  const [authTab, setAuthTab] = useState("signin");
-  const [authEmail, setAuthEmail] = useState("");
-  const [authPassword, setAuthPassword] = useState("");
-  const [authName, setAuthName] = useState("");
-  const [authError, setAuthError] = useState("");
-  const [authSubmitting, setAuthSubmitting] = useState(false);
-  const [authSuccess, setAuthSuccess] = useState("");
+  const [user,setUser] = useState(null);
+  const [authLoading,setAuthLoading] = useState(true);
+  const [authTab,setAuthTab] = useState("signin");
+  const [authEmail,setAuthEmail] = useState("");
+  const [authPassword,setAuthPassword] = useState("");
+  const [authName,setAuthName] = useState("");
+  const [authError,setAuthError] = useState("");
+  const [authSubmitting,setAuthSubmitting] = useState(false);
+  const [authSuccess,setAuthSuccess] = useState("");
 
-  const [screen, setScreen] = useState("home");
-  const [mode, setMode] = useState(null);
-  const [frameworks, setFrameworks] = useState([]);
-  const [ageLevel, setAgeLevel] = useState(null);
-  const [gradeLevel, setGradeLevel] = useState("");
-  const [extraFiles, setExtraFiles] = useState([]);
-  const [templateFile, setTemplateFile] = useState(null);
-  const [credits, setCredits] = useState(0);
-  const [showModal, setShowModal] = useState(false);
-  const [adTimer, setAdTimer] = useState(null);
-  const [adDone, setAdDone] = useState(false);
-  const [history, setHistory] = useState([]);
-  const [viewingHistory, setViewingHistory] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [chatInput, setChatInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [screen,setScreen] = useState("home");
+  const [mode,setMode] = useState(null);
+  const [frameworks,setFrameworks] = useState([]);
+  const [ageLevel,setAgeLevel] = useState(null);
+  const [gradeLevel,setGradeLevel] = useState("");
+  const [extraFiles,setExtraFiles] = useState([]);
+  const [templateFile,setTemplateFile] = useState(null);
+  const [credits,setCredits] = useState(0);
+  const [showModal,setShowModal] = useState(false);
+  const [adTimer,setAdTimer] = useState(null);
+  const [adDone,setAdDone] = useState(false);
+  const [history,setHistory] = useState([]);
+  const [viewingHistory,setViewingHistory] = useState(null);
+  const [messages,setMessages] = useState([]);
+  const [chatInput,setChatInput] = useState("");
+  const [isLoading,setIsLoading] = useState(false);
+  const [error,setError] = useState("");
+  const [outputFormat,setOutputFormat] = useState("chat");
 
-  // American Pathway fields
-  const [apSubject, setApSubject] = useState("");
-  const [apTopic, setApTopic] = useState("");
-  const [apGrade, setApGrade] = useState("");
-  const [apClass, setApClass] = useState("");
-  const [apUnit, setApUnit] = useState("");
-  const [apLesson, setApLesson] = useState("");
-  const [apWeek, setApWeek] = useState("");
-  const [apStandards, setApStandards] = useState("");
-  const [apDuration, setApDuration] = useState("45 minutes");
-  const [apOutputLang, setApOutputLang] = useState("en");
+  const [apSubject,setApSubject] = useState("");
+  const [apTopic,setApTopic] = useState("");
+  const [apGrade,setApGrade] = useState("");
+  const [apClass,setApClass] = useState("");
+  const [apUnit,setApUnit] = useState("");
+  const [apLesson,setApLesson] = useState("");
+  const [apWeek,setApWeek] = useState("");
+  const [apStandards,setApStandards] = useState("");
+  const [apDuration,setApDuration] = useState("45 minutes");
+  const [apOutputLang,setApOutputLang] = useState("en");
+  const [apInstructor,setApInstructor] = useState("");
+  const [apExportFormat,setApExportFormat] = useState("word");
 
-  const chatEndRef = useRef();
-  const extraRef = useRef();
-  const templateRef = useRef();
+  const chatEndRef=useRef(); const extraRef=useRef(); const templateRef=useRef();
 
-  useEffect(() => {
+  useEffect(()=>{
     injectStyles();
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setAuthLoading(false);
-      if (session?.user) loadProfile(session.user.id);
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) loadProfile(session.user.id);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
+    const handleResize=()=>setWindowWidth(window.innerWidth);
+    window.addEventListener("resize",handleResize);
+    supabase.auth.getSession().then(({data:{session}})=>{setUser(session?.user??null);setAuthLoading(false);if(session?.user)loadProfile(session.user.id);});
+    const {data:{subscription}}=supabase.auth.onAuthStateChange((_e,session)=>{setUser(session?.user??null);if(session?.user)loadProfile(session.user.id);});
+    return()=>{window.removeEventListener("resize",handleResize);subscription.unsubscribe();};
+  },[]);
 
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior:"smooth" }); }, [messages]);
+  useEffect(()=>{chatEndRef.current?.scrollIntoView({behavior:"smooth"});},[messages]);
 
-  const loadProfile = async (userId) => {
-    try {
-      const { data } = await supabase.from("profiles").select("*").eq("id", userId).single();
-      if (data) {
-        const weekMs = 7*24*60*60*1000;
-        if (Date.now() - new Date(data.credits_reset_at).getTime() > weekMs) {
-          await supabase.from("profiles").update({ credits:10, credits_reset_at: new Date().toISOString() }).eq("id", userId);
-          setCredits(10);
-        } else { setCredits(data.credits); }
-      }
-      const h = localStorage.getItem("lc_history");
-      if (h) setHistory(JSON.parse(h));
-    } catch {}
+  const loadProfile=async(userId)=>{
+    try{
+      const{data}=await supabase.from("profiles").select("*").eq("id",userId).single();
+      if(data){const weekMs=7*24*60*60*1000;if(Date.now()-new Date(data.credits_reset_at).getTime()>weekMs){await supabase.from("profiles").update({credits:10,credits_reset_at:new Date().toISOString()}).eq("id",userId);setCredits(10);}else setCredits(data.credits);}
+      const h=localStorage.getItem("lc_history");if(h)setHistory(JSON.parse(h));
+    }catch{}
   };
-
-  const saveCredits = async (n) => {
-    setCredits(n);
-    if (user) await supabase.from("profiles").update({ credits: n }).eq("id", user.id);
+  const saveCredits=async(n)=>{setCredits(n);if(user)await supabase.from("profiles").update({credits:n}).eq("id",user.id);};
+  const saveToHistory=async(content,title)=>{
+    const entry={id:Date.now(),date:new Date().toLocaleDateString(),frameworks:frameworks.join(", "),ageLevel:AGE_LEVELS.find(a=>a.value===ageLevel)?.[isAr?"labelAr":"label"]||"",gradeLevel,mode:mode===1?"Template":mode===3?"American Pathway":"Free Input",title:title||content.split("\n")[0].replace(/[#*]/g,"").trim().slice(0,60),content};
+    const updated=[entry,...history].slice(0,20);setHistory(updated);localStorage.setItem("lc_history",JSON.stringify(updated));
   };
+  const handleAuth=async(e)=>{e.preventDefault();setAuthError("");setAuthSubmitting(true);setAuthSuccess("");try{if(authTab==="signup"){const{error}=await supabase.auth.signUp({email:authEmail,password:authPassword,options:{data:{full_name:authName}}});if(error)throw error;setAuthSuccess(t.emailConfirm);}else{const{error}=await supabase.auth.signInWithPassword({email:authEmail,password:authPassword});if(error)throw error;}}catch(e){setAuthError(e.message);}finally{setAuthSubmitting(false);}};
+  const signOut=async()=>{await supabase.auth.signOut();setUser(null);setCredits(0);setHistory([]);};
+  const watchAd=()=>{if(adTimer!==null)return;setAdDone(false);setAdTimer(5);const t2=setInterval(()=>{setAdTimer(p=>{if(p<=1){clearInterval(t2);setAdTimer(null);setAdDone(true);saveCredits(credits+1);return null;}return p-1;});},1000);};
+  const toggleFw=fw=>setFrameworks(p=>p.includes(fw)?p.filter(f=>f!==fw):[...p,fw]);
+  const readAsText=file=>new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.onerror=()=>res(`[${file.name}]`);r.readAsText(file);});
 
-  const saveToHistory = async (content, title) => {
-    const entry = { id:Date.now(), date:new Date().toLocaleDateString(), frameworks:frameworks.join(", "), ageLevel:AGE_LEVELS.find(a=>a.value===ageLevel)?.[isAr?"labelAr":"label"]||"", gradeLevel, mode:mode===1?"Template":mode===3?"American Pathway":"Free Input", title:title||content.split("\n")[0].replace(/[#*]/g,"").trim().slice(0,60), content };
-    const updated = [entry, ...history].slice(0,20);
-    setHistory(updated);
-    localStorage.setItem("lc_history", JSON.stringify(updated));
-  };
-
-  const handleAuth = async (e) => {
-    e.preventDefault();
-    setAuthError(""); setAuthSubmitting(true); setAuthSuccess("");
-    try {
-      if (authTab==="signup") {
-        const { error } = await supabase.auth.signUp({ email:authEmail, password:authPassword, options:{ data:{ full_name:authName } } });
-        if (error) throw error;
-        setAuthSuccess(t.emailConfirm);
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email:authEmail, password:authPassword });
-        if (error) throw error;
-      }
-    } catch(e) { setAuthError(e.message); }
-    finally { setAuthSubmitting(false); }
-  };
-
-  const signOut = async () => { await supabase.auth.signOut(); setUser(null); setCredits(0); setHistory([]); };
-
-  const watchAd = () => {
-    if (adTimer!==null) return;
-    setAdDone(false); setAdTimer(5);
-    const t2 = setInterval(() => {
-      setAdTimer(p => { if (p<=1) { clearInterval(t2); setAdTimer(null); setAdDone(true); saveCredits(credits+1); return null; } return p-1; });
-    }, 1000);
-  };
-
-  const toggleFw = fw => setFrameworks(p => p.includes(fw)?p.filter(f=>f!==fw):[...p,fw]);
-  const readAsText = file => new Promise(res => { const r=new FileReader(); r.onload=e=>res(e.target.result); r.onerror=()=>res(`[${file.name}]`); r.readAsText(file); });
-
-  const buildSystem = async (extraContent="") => {
-    const fwStr = frameworks.length?frameworks.join(", "):"General curriculum";
-    const ageInfo = AGE_LEVELS.find(a=>a.value===ageLevel);
-    const ageStr = ageInfo?`${ageInfo.label} (${ageInfo.sub})`:"Not specified";
+  const buildSystem=async(extraContent="")=>{
+    const fwStr=frameworks.length?frameworks.join(", "):"General curriculum";
+    const ageInfo=AGE_LEVELS.find(a=>a.value===ageLevel);
     return `You are an expert lesson plan designer for Dar Al-Thikr School, Jeddah. Frameworks: ${fwStr}.
-Student: Age ${ageStr} | Grade ${gradeLevel||"Not specified"} | Frameworks ${fwStr}
+Student: Age ${ageInfo?`${ageInfo.label} (${ageInfo.sub})`:"Not specified"} | Grade ${gradeLevel||"Not specified"}
 ${extraContent?`\nReference:\n${extraContent}`:""}
-Create thorough classroom-ready plans with ## headers. Be specific and practical.`;
+Format using ## for main section headings, ### for sub-headings, **bold** for labels, and bullet points with - for lists.`;
   };
 
-  // American Pathway generation
-  const generateAmericanPathway = async () => {
-    if (credits<=0) { setShowModal(true); return; }
-    if (!apSubject||!apTopic) return;
-    setScreen("generating"); setError("");
-    const outputInArabic = apOutputLang === "ar";
-    try {
-      const langInstruction = outputInArabic
-        ? "Generate the ENTIRE lesson plan in Arabic. Use proper educational Arabic terminology. The document should be fully in Arabic, right-to-left."
-        : "Generate the entire lesson plan in English.";
+  // ── American Pathway Generate ──
+  const generateAmericanPathway=async()=>{
+    if(credits<=0){setShowModal(true);return;} if(!apSubject||!apTopic)return;
+    setScreen("generating");setError("");
+    const outputIsAr=apOutputLang==="ar";
+    const langInstr=outputIsAr?"Generate the ENTIRE lesson plan in Arabic with proper educational terminology.":"Generate the entire lesson plan in English.";
+    const apFields={subject:apSubject,grade:apGrade,cls:apClass,unit:apUnit,lesson:apLesson,week:apWeek,topic:apTopic,duration:apDuration,standards:apStandards,date:new Date().toLocaleDateString(),instructor:apInstructor};
+    try{
+      const res=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,
+        system:`You are an expert American Pathway curriculum designer at Dar Al-Thikr School, Jeddah. ${langInstr}
+Follow the EXACT 5Es structure. Use ## for main headings, ### for sub-sections, **label:** for field labels, and - for bullet lists. NO other markdown symbols.`,
+        messages:[{role:"user",content:`Create a complete Dar Al-Thikr American Pathway lesson plan:
+Course: ${apSubject} | Grade: ${apGrade} | Class: ${apClass} | Unit: ${apUnit}
+Lesson: ${apLesson} | Topic: ${apTopic} | Week: ${apWeek} | Duration: ${apDuration}
+Standards: ${apStandards||"CCSS aligned for this grade and topic"}
 
-      const sys = `You are an expert American Pathway curriculum designer at Dar Al-Thikr School, Jeddah. You specialize in the 5Es instructional model.
-${langInstruction}
-Follow the EXACT structure below. Be detailed, specific, and classroom-ready.`;
-
-      const today = new Date().toLocaleDateString();
-      const userMsg = `Create a complete Dar Al-Thikr American Pathway lesson plan with this information:
-
-Course: ${apSubject}
-Date: ${today}
-Grade: ${apGrade}
-Class: ${apClass}
-Unit: ${apUnit}
-Lesson: ${apLesson}
-Topic: ${apTopic}
-Week: ${apWeek}
-Duration: ${apDuration}
-Standards: ${apStandards || "CCSS aligned standards for this grade and topic"}
-
-Follow this EXACT 5Es structure:
-
-## LESSON OVERVIEW
-(Fill: Course, Instructor, Date, Grade, Class, Unit, Lesson, Topic, Week)
-
-## STANDARDS & LEARNING OBJECTIVES
-(List specific CCSS or curriculum standards. Format: By the end of this lesson, students will be able to...)
-
-## LESSON STRUCTURE
-Beginning: Engage, Explore | Middle: Explain, Elaborate | End: Evaluate
+Use these EXACT section headings with ## :
 
 ## INTRODUCTION (Engage)
-**Hook:** (Compelling, relevant hook activity - 5-7 minutes. Include specific questions and student actions)
-**Learning Intentions:** (3-4 "I am learning to..." statements)
-**Success Criteria:** (3-4 checkmarked "I can..." statements)
-**Prior Learning:** (What students already know. Bridge question to activate prior knowledge)
-**Key Vocabulary:** (6-8 content-specific words with student-friendly definitions)
-**Transition Statement:** (Bridge from intro to presentation)
+**Hook:** [5-7 min compelling activity with specific student actions and teacher questions]
+**Learning Intentions:**
+- I am learning to [objective 1]
+- I am learning to [objective 2]
+- I am learning to [objective 3]
+**Success Criteria:**
+- ✔ I can [criterion 1]
+- ✔ I can [criterion 2]
+- ✔ I can [criterion 3]
+**Prior Learning:** [Bridge from what students already know]
+**Key Vocabulary:** [6-8 words with student-friendly definitions]
+**Transition Statement:** [Bridge to presentation]
 
 ## PRESENTATION (Explain)
-(Detailed explicit teaching - 10-15 minutes. Include think-aloud, modeling, anchor charts, check for understanding questions. Be very specific about what teacher says and does.)
+[Detailed 10-15 min explicit teaching. Include think-aloud, modeling, specific teacher language, anchor charts, check for understanding questions.]
 
 ## GUIDED PRACTICE (Elaborate)
-(Collaborative activity - 10-15 minutes. Include specific partner/group tasks, graphic organizers, teacher circulation prompts, discussion questions.)
+[10-15 min collaborative activity. Include specific partner/group tasks, graphic organizer details, teacher circulation prompts, discussion questions.]
 
-## INDEPENDENT PRACTICE, ASSESSMENT & DIFFERENTIATION
-**Independent Task:** (Specific worksheet or task with exact instructions)
-**Extension:** (For early finishers)
-**Formal Assessment:** (How you'll collect and evaluate work)
-**Informal Assessment:** (Observation, questioning strategies)
-**Support/Scaffold:** (For students who need help - sentence frames, visuals, partner reading)
-**Challenge:** (For advanced students)
+## INDEPENDENT PRACTICE & ASSESSMENT
+**Independent Task:** [Specific task with exact instructions]
+**Extension (early finishers):** [Challenge activity]
+**Formal Assessment:** [How collected and evaluated]
+**Informal Assessment:** [Observation and questioning strategies]
+
+## DIFFERENTIATION
+**Support/Scaffold:** [Specific supports - sentence frames, visuals, partner reading, labeled diagrams]
+**Challenge:** [Specific extension for advanced students]
 
 ## REVIEW & CLOSURE (Evaluate)
-**Connection to Learning Intentions:** (Self-assessment strategy)
-**Exit Ticket:** (2 specific prompts students answer on index card)
-**Closing Discussion:** (1-2 discussion questions)
-**Preview Next Lesson:** (Brief teaser)`;
-
-      const res = await fetch(API_URL, {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:1000, system:sys, messages:[{ role:"user", content:userMsg }] })
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error.message);
-      const text = data.content.map(b=>b.text||"").join("\n");
-      await saveCredits(credits-1);
-      await saveToHistory(text, `${apTopic} - Grade ${apGrade}`);
-      setMessages([{ role:"assistant", content:text, ts:Date.now(), outputLang:apOutputLang }]);
-      setScreen("result");
-    } catch(e) { setError(e.message||"Generation failed."); setScreen("american"); }
+**Connection to Learning Intentions:** [Self-assessment strategy]
+**Exit Ticket:** 
+1. [First specific prompt]
+2. [Second specific prompt]
+**Closing Discussion:** [1-2 discussion questions]
+**Preview Next Lesson:** [Brief teaser for next class]`}]})});
+      const data=await res.json();if(data.error)throw new Error(data.error.message);
+      const text=data.content.map(b=>b.text||"").join("\n");
+      await saveCredits(credits-1);await saveToHistory(text,`${apTopic} - Grade ${apGrade}`);
+      if(apExportFormat==="word"){doExportWord(text,`${apTopic} - Grade ${apGrade}`,outputIsAr,apFields);setScreen("american");}
+      else if(apExportFormat==="pdf"){doExportPDF(text,`${apTopic} - Grade ${apGrade}`,outputIsAr,apFields);setScreen("american");}
+      else{setMessages([{role:"assistant",content:text,ts:Date.now(),outputLang:apOutputLang,apFields}]);setScreen("result");}
+    }catch(e){setError(e.message||"Generation failed.");setScreen("american");}
   };
 
-  const sendChat = async () => {
-    if (!chatInput.trim()||isLoading) return;
-    if (credits<=0) { setShowModal(true); return; }
-    const userMsg = { role:"user", content:chatInput.trim(), ts:Date.now() };
-    const newMessages = [...messages, userMsg];
-    setMessages(newMessages); setChatInput(""); setIsLoading(true); setError("");
-    try {
-      let extra="";
-      for (const f of extraFiles) { const tx=await readAsText(f); extra+=`\n[${f.name}]\n${tx.slice(0,1500)}`; }
-      const sys = await buildSystem(extra);
-      const isFirst = messages.length===0;
-      const langNote = isAr ? "\nGenerate the lesson plan in Arabic with proper educational terminology." : "";
-      const res = await fetch(API_URL, {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:1000,
-          system:sys+(isFirst?`\n\nCreate complete lesson plan with sections: ## Lesson Overview ## Learning Objectives ## Materials & Resources ## Lesson Sequence ## Assessment Strategies ## Differentiation & Inclusion ## Extension${langNote}`:"\n\nRefine based on teacher feedback."),
-          messages:newMessages.map(m=>({role:m.role,content:m.content})) })
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error.message);
-      const text = data.content.map(b=>b.text||"").join("\n");
-      setMessages([...newMessages, { role:"assistant", content:text, ts:Date.now() }]);
-      if (isFirst) { await saveCredits(credits-1); await saveToHistory(text); }
-    } catch(e) { setError(e.message||"Something went wrong."); }
-    finally { setIsLoading(false); }
+  // ── Chat Send ──
+  const sendChat=async()=>{
+    if(!chatInput.trim()||isLoading)return;if(credits<=0){setShowModal(true);return;}
+    const userMsg={role:"user",content:chatInput.trim(),ts:Date.now()};
+    const newMessages=[...messages,userMsg];setMessages(newMessages);setChatInput("");setIsLoading(true);setError("");
+    try{
+      let extra="";for(const f of extraFiles){const tx=await readAsText(f);extra+=`\n[${f.name}]\n${tx.slice(0,1500)}`;}
+      const sys=await buildSystem(extra);const isFirst=messages.length===0;
+      const langNote=isAr?"\nGenerate the lesson plan entirely in Arabic with proper educational Arabic.":"";
+      const res=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,
+        system:sys+(isFirst?`\n\nCreate a complete lesson plan using these EXACT section headings with ##:\n## Lesson Overview\n## Learning Objectives\n## Materials & Resources\n## Lesson Sequence (with timing)\n## Assessment Strategies\n## Differentiation & Inclusion\n## Extension / Homework${langNote}`:"\n\nRefine or continue based on the teacher's feedback. Be specific and practical."),
+        messages:newMessages.map(m=>({role:m.role,content:m.content}))})});
+      const data=await res.json();if(data.error)throw new Error(data.error.message);
+      const text=data.content.map(b=>b.text||"").join("\n");
+      const aiMsg={role:"assistant",content:text,ts:Date.now()};
+      setMessages([...newMessages,aiMsg]);
+      if(isFirst){await saveCredits(credits-1);await saveToHistory(text);
+        if(outputFormat==="pdf")doExportPDF(text,"Lesson Plan",isAr);
+        else if(outputFormat==="word")doExportWord(text,"Lesson Plan",isAr);}
+    }catch(e){setError(e.message||"Something went wrong.");}finally{setIsLoading(false);}
   };
 
-  const generateTemplate = async () => {
-    if (credits<=0) { setShowModal(true); return; }
-    if (!templateFile) return;
-    setScreen("generating"); setError("");
-    try {
-      let extra="";
-      for (const f of extraFiles) { const tx=await readAsText(f); extra+=`\n[${f.name}]\n${tx.slice(0,1500)}`; }
-      const tmpl = await readAsText(templateFile);
-      const sys = await buildSystem(extra);
-      const langNote = isAr ? "\nGenerate all content in Arabic." : "";
-      const res = await fetch(API_URL, {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:1000,
-          system:sys+"\n\nFill the template completely. Follow its structure exactly."+langNote,
-          messages:[{ role:"user", content:`Fill this template:\n\n${tmpl.slice(0,3000)}` }] })
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error.message);
-      const text = data.content.map(b=>b.text||"").join("\n");
-      await saveCredits(credits-1); await saveToHistory(text,`Template: ${templateFile.name}`);
-      setMessages([{ role:"assistant", content:text, ts:Date.now() }]);
-      setScreen("result");
-    } catch(e) { setError(e.message||"Generation failed."); setScreen("input"); }
+  // ── Template Generate ──
+  const generateTemplate=async()=>{
+    if(credits<=0){setShowModal(true);return;}if(!templateFile)return;
+    setScreen("generating");setError("");
+    try{
+      let extra="";for(const f of extraFiles){const tx=await readAsText(f);extra+=`\n[${f.name}]\n${tx.slice(0,1500)}`;}
+      const tmpl=await readAsText(templateFile);const sys=await buildSystem(extra);
+      const langNote=isAr?"\nGenerate all content in Arabic.":"";
+      const res=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,
+        system:sys+`\n\nYou are filling in a lesson plan template. Follow its EXACT structure and order. Fill every field and section completely. Use **bold** for labels, - for lists, and ## for main section headings. Do NOT skip any section from the template.${langNote}`,
+        messages:[{role:"user",content:`Fill in every section of this lesson plan template completely and thoroughly:\n\n${tmpl.slice(0,3000)}\n\nReturn the filled template maintaining its exact structure.`}]})});
+      const data=await res.json();if(data.error)throw new Error(data.error.message);
+      const text=data.content.map(b=>b.text||"").join("\n");
+      await saveCredits(credits-1);await saveToHistory(text,`Template: ${templateFile.name}`);
+      if(outputFormat==="word"){doExportWord(text,`Lesson Plan - ${templateFile.name}`,isAr);setScreen("input");}
+      else if(outputFormat==="pdf"){doExportPDF(text,`Lesson Plan - ${templateFile.name}`,isAr);setScreen("input");}
+      else{setMessages([{role:"assistant",content:text,ts:Date.now()}]);setScreen("result");}
+    }catch(e){setError(e.message||"Generation failed.");setScreen("input");}
   };
 
-  const downloadText = (content, filename="lesson-plan.txt") => {
-    const b=new Blob([content],{type:"text/plain"}); const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=filename; a.click();
+  const downloadTxt=(content,filename="lesson-plan.txt")=>{const b=new Blob([content],{type:"text/plain"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=filename;a.click();};
+  const resetToHome=()=>{setScreen("home");setMode(null);setFrameworks([]);setAgeLevel(null);setGradeLevel("");setExtraFiles([]);setTemplateFile(null);setMessages([]);setChatInput("");setError("");setApSubject("");setApTopic("");setApGrade("");setApClass("");setApUnit("");setApLesson("");setApWeek("");setApStandards("");setApInstructor("");};
+
+  // ── SHARED STYLES ──
+  const maxW=isDesktop?900:480;
+  const S={
+    app:{fontFamily,background:G.bg,minHeight:"100vh",color:G.text,width:"100%",direction:dir},
+    inner:{maxWidth:maxW,margin:"0 auto",minHeight:"100vh",display:"flex",flexDirection:"column"},
+    card:{background:G.white,border:`1px solid ${G.border}`,borderRadius:isDesktop?20:16,padding:isDesktop?"24px":"18px"},
+    btnPrimary:{background:G.primary,color:"#fff",border:"none",borderRadius:10,padding:isDesktop?"15px 24px":"14px 20px",fontFamily,fontWeight:600,fontSize:isDesktop?16:15,width:"100%",display:"block",cursor:"pointer"},
+    btnOutline:{background:"transparent",color:G.primary,border:`1.5px solid ${G.primary}`,borderRadius:10,padding:"10px 18px",fontFamily,fontWeight:600,fontSize:14,cursor:"pointer"},
+    btnGhost:{background:"transparent",color:G.muted,border:`1px solid ${G.border}`,borderRadius:10,padding:"10px 18px",fontFamily,fontSize:14,cursor:"pointer"},
+    label:{fontSize:12,fontWeight:700,color:G.primary,letterSpacing:".06em",textTransform:"uppercase",display:"block",marginBottom:8},
+    chip:(on)=>({padding:"7px 14px",borderRadius:20,border:`1.5px solid ${on?G.primary:G.border}`,background:on?G.accentLight:G.white,color:on?G.primary:G.muted,cursor:"pointer",fontSize:13,fontFamily,fontWeight:on?600:400}),
+    input:{width:"100%",padding:"11px 14px",borderRadius:10,border:`1.5px solid ${G.border}`,fontFamily,fontSize:14,color:G.text,background:G.white,direction:dir},
+    topBar:{background:G.primary,padding:isDesktop?"16px 32px":"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between"},
   };
 
-  const resetToHome = () => {
-    setScreen("home"); setMode(null); setFrameworks([]); setAgeLevel(null);
-    setGradeLevel(""); setExtraFiles([]); setTemplateFile(null);
-    setMessages([]); setChatInput(""); setError("");
-    setApSubject(""); setApTopic(""); setApGrade(""); setApClass("");
-    setApUnit(""); setApLesson(""); setApWeek(""); setApStandards("");
-  };
+  const LangBtn=()=><button onClick={()=>setLang(isAr?"en":"ar")} style={{background:"rgba(255,255,255,.2)",border:"1px solid rgba(255,255,255,.4)",borderRadius:20,padding:"4px 12px",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily}}>{isAr?"EN":"عر"}</button>;
 
-  // SHARED STYLES
-  const S = {
-    app:{ fontFamily, background:G.bg, minHeight:"100vh", color:G.text, maxWidth:480, margin:"0 auto", direction:dir },
-    card:{ background:G.white, border:`1px solid ${G.border}`, borderRadius:16, padding:"18px" },
-    btnPrimary:{ background:G.primary, color:"#fff", border:"none", borderRadius:10, padding:"14px 20px", fontFamily, fontWeight:600, fontSize:15, width:"100%", display:"block", cursor:"pointer" },
-    btnOutline:{ background:"transparent", color:G.primary, border:`1.5px solid ${G.primary}`, borderRadius:10, padding:"10px 18px", fontFamily, fontWeight:600, fontSize:14, cursor:"pointer" },
-    btnGhost:{ background:"transparent", color:G.muted, border:`1px solid ${G.border}`, borderRadius:10, padding:"10px 18px", fontFamily, fontSize:14, cursor:"pointer" },
-    label:{ fontSize:12, fontWeight:700, color:G.primary, letterSpacing:".06em", textTransform:"uppercase", display:"block", marginBottom:8 },
-    chip:(on)=>({ padding:"7px 14px", borderRadius:20, border:`1.5px solid ${on?G.primary:G.border}`, background:on?G.accentLight:G.white, color:on?G.primary:G.muted, cursor:"pointer", fontSize:13, fontFamily, fontWeight:on?600:400 }),
-    input:{ width:"100%", padding:"11px 14px", borderRadius:10, border:`1.5px solid ${G.border}`, fontFamily, fontSize:14, color:G.text, background:G.white, direction:dir },
-    topBar:(bg="#1a6b42")=>({ background:bg, padding:"14px 16px", display:"flex", alignItems:"center", justifyContent:"space-between" }),
-    langToggle:{ background:"rgba(255,255,255,.2)", border:"1px solid rgba(255,255,255,.4)", borderRadius:20, padding:"4px 12px", color:"#fff", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily },
-  };
-
-  const LangBtn = () => (
-    <button onClick={()=>setLang(isAr?"en":"ar")} style={S.langToggle}>{isAr?"EN":"عر"}</button>
-  );
-
-  const renderSections = (content, resultOutputLang) => {
-    const resultIsAr = resultOutputLang === "ar";
-    const sections = content.split(/\n##\s+/).filter(Boolean);
-    return sections.map((s,i)=>{
-      const nl=s.indexOf("\n"); const title=nl>-1?s.slice(0,nl):s; const body=nl>-1?s.slice(nl+1):"";
-      return (
-        <div key={i} style={{marginBottom:20,direction:resultIsAr?"rtl":"ltr"}}>
-          <h3 style={{fontFamily:resultIsAr?"'Noto Kufi Arabic',sans-serif":"'Plus Jakarta Sans',sans-serif",color:G.primary,fontSize:14,fontWeight:700,marginBottom:6,borderBottom:`2px solid ${G.accentLight}`,paddingBottom:4}}>{title}</h3>
-          <p style={{color:G.text,fontSize:13.5,lineHeight:1.9,whiteSpace:"pre-wrap",fontFamily:resultIsAr?"'Noto Kufi Arabic',sans-serif":fontFamily}}>{body}</p>
-        </div>
-      );
-    });
-  };
-
-  // LOADING
-  if (authLoading) return (
-    <div style={{...S.app,display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh"}}>
-      <div style={{width:40,height:40,borderRadius:"50%",border:`3px solid ${G.border}`,borderTopColor:G.primary,animation:"spin 1s linear infinite"}}/>
-    </div>
-  );
-
-  // AUTH
-  if (!user) return (
-    <div style={{...S.app,minHeight:"100vh",display:"flex",flexDirection:"column"}} className="fade">
-      <div style={{background:G.white,borderBottom:`1px solid ${G.border}`,padding:"16px 20px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <img src={LOGO_URL} alt="Dar Al-Thikr" style={{height:38,objectFit:"contain"}} onError={e=>e.target.style.display='none'}/>
-        <button onClick={()=>setLang(isAr?"en":"ar")} style={{background:G.accentLight,border:`1px solid ${G.border}`,borderRadius:20,padding:"5px 14px",color:G.primary,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily}}>{isAr?"EN":"عر"}</button>
-      </div>
-      <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"32px 20px"}}>
-        <div style={{width:64,height:64,borderRadius:18,background:G.primary,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,marginBottom:16,boxShadow:`0 8px 24px ${G.primary}30`}}>📝</div>
-        <h1 style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:800,fontSize:26,color:G.primary,marginBottom:6}}>EduBudd</h1>
-        <p style={{color:G.muted,fontSize:14,marginBottom:28,textAlign:"center"}}>{t.tagline}</p>
-        <div style={{width:"100%",maxWidth:360}}>
-          <div style={{display:"flex",background:G.surface,borderRadius:10,padding:4,marginBottom:20}}>
-            {["signin","signup"].map(tab=>(
-              <button key={tab} onClick={()=>{setAuthTab(tab);setAuthError("");setAuthSuccess("");}} style={{flex:1,padding:"9px",borderRadius:8,border:"none",background:authTab===tab?G.white:"transparent",color:authTab===tab?G.primary:G.muted,fontFamily,fontWeight:600,fontSize:14,boxShadow:authTab===tab?"0 1px 4px #00000015":"none",cursor:"pointer"}}>
-                {tab==="signin"?t.signIn:t.signUp}
-              </button>
-            ))}
-          </div>
-          <form onSubmit={handleAuth} style={{display:"flex",flexDirection:"column",gap:12}}>
-            {authTab==="signup"&&<input value={authName} onChange={e=>setAuthName(e.target.value)} placeholder={t.fullName} style={S.input} required/>}
-            <input type="email" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} placeholder={t.email} style={S.input} required/>
-            <input type="password" value={authPassword} onChange={e=>setAuthPassword(e.target.value)} placeholder={t.password} style={S.input} required minLength={6}/>
-            {authError&&<div style={{background:"#fff0f0",border:"1px solid #fcc",borderRadius:8,padding:"10px 12px",color:G.red,fontSize:13}}>{authError}</div>}
-            {authSuccess&&<div style={{background:G.accentLight,border:`1px solid ${G.border}`,borderRadius:8,padding:"10px 12px",color:G.primary,fontSize:13}}>{authSuccess}</div>}
-            <button type="submit" disabled={authSubmitting} style={{...S.btnPrimary,opacity:authSubmitting?.7:1,marginTop:4}}>
-              {authSubmitting?t.pleaseWait:authTab==="signin"?t.signInBtn:t.signUpBtn}
-            </button>
-          </form>
-          <p style={{textAlign:"center",color:G.muted,fontSize:12,marginTop:16}}>
-            {authTab==="signin"?t.noAccount:t.haveAccount}{" "}
-            <button onClick={()=>setAuthTab(authTab==="signin"?"signup":"signin")} style={{background:"none",border:"none",color:G.primary,fontWeight:600,cursor:"pointer",fontSize:12,fontFamily}}>
-              {authTab==="signin"?t.signUp:t.signIn}
-            </button>
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-
-  // GENERATING
-  if (screen==="generating") return (
-    <div style={{...S.app,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"100vh",gap:20}}>
-      <div style={{width:52,height:52,borderRadius:"50%",border:`3px solid ${G.border}`,borderTopColor:G.primary,animation:"spin 1s linear infinite"}}/>
-      <p style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:20,color:G.primary}}>{t.building}</p>
-      <p style={{color:G.muted,fontSize:13}}>{t.poweredBy}</p>
-    </div>
-  );
-
-  // RESULT (Template + American Pathway)
-  if (screen==="result") {
-    const content = messages[0]?.content||"";
-    const resultLang = messages[0]?.outputLang || lang;
-    return (
-      <div style={{...S.app,padding:"0 0 32px"}} className="fade">
-        <div style={S.topBar()}>
-          <button onClick={resetToHome} style={{background:"none",border:"none",color:"#fff",fontSize:13,cursor:"pointer"}}>{t.back}</button>
-          <span style={{color:"#fff",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:15}}>{t.lessonReady}</span>
-          <div style={{display:"flex",gap:8,alignItems:"center"}}>
-            <LangBtn/>
-            <button onClick={()=>downloadText(content)} style={{background:"rgba(255,255,255,.2)",border:"1px solid rgba(255,255,255,.4)",borderRadius:8,padding:"6px 12px",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>{t.download}</button>
-          </div>
-        </div>
-        <div style={{padding:"16px"}}>
-          <div style={{...S.card,maxHeight:"72vh",overflowY:"auto"}}>{renderSections(content, resultLang)}</div>
-          <button onClick={resetToHome} style={{...S.btnPrimary,marginTop:14}}>+ {t.creating}</button>
-        </div>
-      </div>
-    );
-  }
-
-  // HISTORY DETAIL
-  if (viewingHistory) {
-    return (
-      <div style={{...S.app,padding:"0 0 32px"}} className="fade">
-        <div style={S.topBar()}>
-          <button onClick={()=>setViewingHistory(null)} style={{background:"none",border:"none",color:"#fff",fontSize:13,cursor:"pointer"}}>{t.back}</button>
-          <span style={{color:"#fff",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:14}}>{t.pastPlan}</span>
-          <div style={{display:"flex",gap:8}}><LangBtn/><button onClick={()=>downloadText(viewingHistory.content)} style={{background:"rgba(255,255,255,.2)",border:"1px solid rgba(255,255,255,.4)",borderRadius:8,padding:"6px 12px",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>{t.download}</button></div>
-        </div>
-        <div style={{padding:"16px"}}>
-          <div style={{background:G.accentLight,borderRadius:10,padding:"10px 14px",marginBottom:14,fontSize:12,color:G.primary}}>📅 {viewingHistory.date} · {viewingHistory.ageLevel} · {viewingHistory.mode}</div>
-          <div style={{...S.card,maxHeight:"70vh",overflowY:"auto"}}>{renderSections(viewingHistory.content, "en")}</div>
-        </div>
-      </div>
-    );
-  }
-
-  // HISTORY LIST
-  if (screen==="history") return (
-    <div style={{...S.app,padding:"0 0 32px"}} className="fade">
-      <div style={S.topBar()}>
-        <button onClick={()=>setScreen("home")} style={{background:"none",border:"none",color:"#fff",fontSize:13,cursor:"pointer"}}>{t.back}</button>
-        <span style={{color:"#fff",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:16}}>{t.history}</span>
-        <LangBtn/>
-      </div>
-      <div style={{padding:"16px"}}>
-        {history.length===0?(
-          <div style={{textAlign:"center",padding:"60px 20px",color:G.muted}}>
-            <div style={{fontSize:40,marginBottom:12}}>📋</div>
-            <p style={{fontWeight:600}}>{t.noHistory}</p>
-            <p style={{fontSize:13,marginTop:4}}>{t.noHistoryDesc}</p>
-          </div>
-        ):history.map(h=>(
-          <div key={h.id} onClick={()=>setViewingHistory(h)} style={{...S.card,marginBottom:10,cursor:"pointer"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-              <div style={{flex:1,minWidth:0}}>
-                <p style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:600,fontSize:14,marginBottom:4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{h.title||"Lesson Plan"}</p>
-                <p style={{fontSize:12,color:G.muted}}>{h.ageLevel} · {h.frameworks?.split(",")[0]}</p>
-              </div>
-              <div style={{textAlign:"right",flexShrink:0,marginLeft:10}}>
-                <p style={{fontSize:11,color:G.muted}}>{h.date}</p>
-                <span style={{background:G.accentLight,color:G.primary,fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:10,display:"inline-block",marginTop:3}}>{h.mode}</span>
-              </div>
-            </div>
-          </div>
+  const FormatSelector=({value,onChange})=>(
+    <div style={{...S.card,marginBottom:14}}>
+      <span style={S.label}>{t.outputFormat}</span>
+      <div style={{display:"flex",gap:8}}>
+        {[["chat",t.formatChat],["pdf",t.formatPDF],["word",t.formatWord]].map(([val,label])=>(
+          <button key={val} onClick={()=>onChange(val)} style={{...S.chip(value===val),flex:1,textAlign:"center",padding:"9px 6px"}}>{label}</button>
         ))}
       </div>
     </div>
   );
 
-  // CHAT SCREEN
-  if (screen==="chat") {
-    const canSend = chatInput.trim().length>2&&!isLoading;
-    return (
-      <div style={{...S.app,display:"flex",flexDirection:"column",height:"100vh"}} className="fade">
-        <div style={S.topBar()}>
-          <button onClick={resetToHome} style={{background:"none",border:"none",color:"#fff",fontSize:13,cursor:"pointer"}}>{t.back}</button>
-          <div style={{textAlign:"center"}}>
-            <p style={{color:"#fff",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:14}}>{t.freeMode}</p>
-            <p style={{color:"rgba(255,255,255,.7)",fontSize:11}}>{frameworks.slice(0,2).join(", ")} · {AGE_LEVELS.find(a=>a.value===ageLevel)?.[isAr?"labelAr":"label"]}</p>
+  const RenderedContent=({content,isAr:rAr=false})=>(
+    <div className="rendered-content" style={{direction:rAr?"rtl":"ltr",fontFamily:rAr?"'Noto Kufi Arabic',sans-serif":fontFamily}}
+      dangerouslySetInnerHTML={{__html:mdToHtml(content)}}/>
+  );
+
+  const ExportButtons=({content,title,isAr:rAr=false,fields=null})=>(
+    <div style={{display:"flex",gap:8,marginTop:8,flexWrap:"wrap"}}>
+      <button onClick={()=>doExportPDF(content,title,rAr,fields)} style={{background:"none",border:`1px solid ${G.border}`,borderRadius:8,padding:"6px 12px",color:G.primary,fontSize:12,fontWeight:600,cursor:"pointer"}}>📄 PDF</button>
+      <button onClick={()=>doExportWord(content,title,rAr,fields)} style={{background:"none",border:`1px solid ${G.border}`,borderRadius:8,padding:"6px 12px",color:G.primary,fontSize:12,fontWeight:600,cursor:"pointer"}}>📝 Word</button>
+      <button onClick={()=>downloadTxt(content,`${title}.txt`)} style={{background:"none",border:`1px solid ${G.border}`,borderRadius:8,padding:"6px 12px",color:G.muted,fontSize:12,cursor:"pointer"}}>↓ .txt</button>
+    </div>
+  );
+
+  // ── LOADING ──
+  if(authLoading)return(<div style={{...S.app,display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh"}}><div style={{width:40,height:40,borderRadius:"50%",border:`3px solid ${G.border}`,borderTopColor:G.primary,animation:"spin 1s linear infinite"}}/></div>);
+
+  // ── AUTH ──
+  if(!user)return(
+    <div style={S.app}>
+      <div style={{...S.inner,alignItems:"center",justifyContent:"center",padding:"20px"}}>
+        <div style={{width:"100%",maxWidth:420}} className="fade">
+          <div style={{textAlign:"center",marginBottom:32}}>
+            <div style={{width:88,height:88,borderRadius:24,background:G.primary,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 18px",boxShadow:`0 12px 40px ${G.primary}40`}}><TeacherIcon size={58}/></div>
+            <h1 style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:800,fontSize:34,color:G.primary,marginBottom:8}}>EduBudd</h1>
+            <p style={{color:G.muted,fontSize:14,marginBottom:12}}>{t.tagline}</p>
+            <img src={LOGO_URL} alt="Dar Al-Thikr" style={{height:34,objectFit:"contain",opacity:.75}} onError={e=>e.target.style.display='none'}/>
           </div>
-          <div style={{display:"flex",gap:6,alignItems:"center"}}>
-            <LangBtn/>
-            <button onClick={()=>setShowModal(true)} style={{background:"rgba(255,255,255,.2)",border:"1px solid rgba(255,255,255,.3)",borderRadius:14,padding:"4px 10px",color:"#fff",fontSize:12,cursor:"pointer"}}>⚡{credits}</button>
+          <div style={{...S.card,padding:"28px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+              <div style={{display:"flex",background:G.surface,borderRadius:10,padding:4,flex:1,marginRight:12}}>
+                {["signin","signup"].map(tab=>(<button key={tab} onClick={()=>{setAuthTab(tab);setAuthError("");setAuthSuccess("");}} style={{flex:1,padding:"9px",borderRadius:8,border:"none",background:authTab===tab?G.white:"transparent",color:authTab===tab?G.primary:G.muted,fontFamily,fontWeight:600,fontSize:14,cursor:"pointer",boxShadow:authTab===tab?"0 1px 4px #00000015":"none"}}>{tab==="signin"?t.signIn:t.signUp}</button>))}
+              </div>
+              <button onClick={()=>setLang(isAr?"en":"ar")} style={{background:G.accentLight,border:`1px solid ${G.border}`,borderRadius:20,padding:"8px 14px",color:G.primary,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily}}>{isAr?"EN":"عر"}</button>
+            </div>
+            <form onSubmit={handleAuth} style={{display:"flex",flexDirection:"column",gap:12}}>
+              {authTab==="signup"&&<input value={authName} onChange={e=>setAuthName(e.target.value)} placeholder={t.fullName} style={S.input} required/>}
+              <input type="email" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} placeholder={t.email} style={S.input} required/>
+              <input type="password" value={authPassword} onChange={e=>setAuthPassword(e.target.value)} placeholder={t.password} style={S.input} required minLength={6}/>
+              {authError&&<div style={{background:"#fff0f0",border:"1px solid #fcc",borderRadius:8,padding:"10px 12px",color:G.red,fontSize:13}}>{authError}</div>}
+              {authSuccess&&<div style={{background:G.accentLight,border:`1px solid ${G.border}`,borderRadius:8,padding:"10px 12px",color:G.primary,fontSize:13}}>{authSuccess}</div>}
+              <button type="submit" disabled={authSubmitting} style={{...S.btnPrimary,marginTop:4,opacity:authSubmitting?.7:1}}>{authSubmitting?t.pleaseWait:authTab==="signin"?t.signInBtn:t.signUpBtn}</button>
+            </form>
+            <p style={{textAlign:"center",color:G.muted,fontSize:12,marginTop:16}}>
+              {authTab==="signin"?t.noAccount:t.haveAccount}{" "}
+              <button onClick={()=>setAuthTab(authTab==="signin"?"signup":"signin")} style={{background:"none",border:"none",color:G.primary,fontWeight:600,cursor:"pointer",fontSize:12,fontFamily}}>{authTab==="signin"?t.signUp:t.signIn}</button>
+            </p>
           </div>
         </div>
-        <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:12}}>
+      </div>
+    </div>
+  );
+
+  // ── GENERATING ──
+  if(screen==="generating")return(<div style={{...S.app,display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh"}}><div style={{textAlign:"center"}}><div style={{width:52,height:52,borderRadius:"50%",border:`3px solid ${G.border}`,borderTopColor:G.primary,animation:"spin 1s linear infinite",margin:"0 auto 20px"}}/><p style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:22,color:G.primary}}>{t.building}</p><p style={{color:G.muted,fontSize:13,marginTop:6}}>{t.poweredBy}</p></div></div>);
+
+  // ── RESULT (Chat mode) ──
+  if(screen==="result"){
+    const lastMsg=messages[messages.length-1];
+    const content=lastMsg?.content||"";
+    const rAr=lastMsg?.outputLang==="ar";
+    const fields=lastMsg?.apFields||null;
+    return(
+      <div style={S.app} className="fade">
+        <div style={S.inner}>
+          <div style={S.topBar}>
+            <button onClick={resetToHome} style={{background:"none",border:"none",color:"#fff",fontSize:13,cursor:"pointer"}}>{t.back}</button>
+            <span style={{color:"#fff",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:isDesktop?17:15}}>{t.lessonReady}</span>
+            <div style={{display:"flex",gap:6,alignItems:"center"}}><LangBtn/></div>
+          </div>
+          <div style={{flex:1,padding:isDesktop?"24px 32px":"16px",overflowY:"auto"}}>
+            <ExportButtons content={content} title={lastMsg?.apFields?`${lastMsg.apFields.topic} - Grade ${lastMsg.apFields.grade}`:"Lesson Plan"} isAr={rAr} fields={fields}/>
+            <div style={{...S.card,marginTop:12}}><RenderedContent content={content} isAr={rAr}/></div>
+            <button onClick={resetToHome} style={{...S.btnPrimary,marginTop:14}}>{t.createAnother}</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── HISTORY DETAIL ──
+  if(viewingHistory)return(
+    <div style={S.app} className="fade">
+      <div style={S.inner}>
+        <div style={S.topBar}>
+          <button onClick={()=>setViewingHistory(null)} style={{background:"none",border:"none",color:"#fff",fontSize:13,cursor:"pointer"}}>{t.back}</button>
+          <span style={{color:"#fff",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:isDesktop?17:15}}>{t.pastPlan}</span>
+          <LangBtn/>
+        </div>
+        <div style={{flex:1,padding:isDesktop?"24px 32px":"16px",overflowY:"auto"}}>
+          <div style={{background:G.accentLight,borderRadius:10,padding:"10px 14px",marginBottom:12,fontSize:12,color:G.primary}}>📅 {viewingHistory.date} · {viewingHistory.ageLevel} · {viewingHistory.mode}</div>
+          <ExportButtons content={viewingHistory.content} title={viewingHistory.title}/>
+          <div style={{...S.card,marginTop:12}}><RenderedContent content={viewingHistory.content}/></div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── HISTORY LIST ──
+  if(screen==="history")return(
+    <div style={S.app} className="fade">
+      <div style={S.inner}>
+        <div style={S.topBar}>
+          <button onClick={()=>setScreen("home")} style={{background:"none",border:"none",color:"#fff",fontSize:13,cursor:"pointer"}}>{t.back}</button>
+          <span style={{color:"#fff",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:isDesktop?17:16}}>{t.history}</span>
+          <LangBtn/>
+        </div>
+        <div style={{flex:1,padding:isDesktop?"24px 32px":"16px",overflowY:"auto"}}>
+          {history.length===0?(<div style={{textAlign:"center",padding:"80px 20px",color:G.muted}}><div style={{fontSize:48,marginBottom:16}}>📋</div><p style={{fontWeight:600,fontSize:16}}>{t.noHistory}</p><p style={{fontSize:13,marginTop:6}}>{t.noHistoryDesc}</p></div>):(
+            <div style={{display:"grid",gridTemplateColumns:isDesktop?"1fr 1fr":"1fr",gap:12}}>
+              {history.map(h=>(<div key={h.id} onClick={()=>setViewingHistory(h)} style={{...S.card,cursor:"pointer"}} className="mode-card">
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                  <div style={{flex:1,minWidth:0}}><p style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:600,fontSize:14,marginBottom:4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{h.title||"Lesson Plan"}</p><p style={{fontSize:12,color:G.muted}}>{h.ageLevel} · {h.frameworks?.split(",")[0]}</p></div>
+                  <div style={{textAlign:"right",flexShrink:0,marginLeft:10}}><p style={{fontSize:11,color:G.muted}}>{h.date}</p><span style={{background:G.accentLight,color:G.primary,fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:10,display:"inline-block",marginTop:3}}>{h.mode}</span></div>
+                </div>
+              </div>))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── CHAT ──
+  if(screen==="chat"){
+    const canSend=chatInput.trim().length>2&&!isLoading;
+    return(
+      <div style={{...S.app,height:"100vh",display:"flex",flexDirection:"column"}}>
+        <div style={S.topBar}>
+          <button onClick={resetToHome} style={{background:"none",border:"none",color:"#fff",fontSize:13,cursor:"pointer"}}>{t.back}</button>
+          <div style={{textAlign:"center"}}><p style={{color:"#fff",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:isDesktop?16:14}}>{t.freeMode}</p><p style={{color:"rgba(255,255,255,.7)",fontSize:11}}>{frameworks.slice(0,2).join(", ")} · {AGE_LEVELS.find(a=>a.value===ageLevel)?.[isAr?"labelAr":"label"]}</p></div>
+          <div style={{display:"flex",gap:6,alignItems:"center"}}><LangBtn/><button onClick={()=>setShowModal(true)} style={{background:"rgba(255,255,255,.2)",border:"1px solid rgba(255,255,255,.3)",borderRadius:14,padding:"4px 10px",color:"#fff",fontSize:12,cursor:"pointer"}}>⚡{credits}</button></div>
+        </div>
+        <div style={{flex:1,overflowY:"auto",padding:isDesktop?"20px 32px":"16px",display:"flex",flexDirection:"column",gap:12,maxWidth:maxW,width:"100%",margin:"0 auto"}}>
           {messages.length===0&&(
-            <div style={{textAlign:"center",padding:"32px 20px",color:G.muted}} className="fade">
-              <div style={{fontSize:36,marginBottom:10}}>💬</div>
-              <p style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:16,color:G.primary,marginBottom:6}}>{t.describeLesson}</p>
-              <p style={{fontSize:13,lineHeight:1.6}}>{t.describeHint}</p>
-              <div style={{background:G.accentLight,borderRadius:10,padding:"12px",marginTop:16,textAlign:isAr?"right":"left"}}>
+            <div style={{textAlign:"center",padding:"48px 20px",color:G.muted}} className="fade">
+              <div style={{width:64,height:64,borderRadius:20,background:G.primary,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px"}}><TeacherIcon size={40}/></div>
+              <p style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:isDesktop?20:16,color:G.primary,marginBottom:8}}>{t.describeLesson}</p>
+              <p style={{fontSize:13,lineHeight:1.7,maxWidth:400,margin:"0 auto"}}>{t.describeHint}</p>
+              <div style={{background:G.accentLight,borderRadius:12,padding:"14px",marginTop:20,textAlign:isAr?"right":"left",maxWidth:400,margin:"20px auto 0"}}>
                 <p style={{fontSize:12,color:G.primary,fontWeight:600,marginBottom:4}}>{t.example}:</p>
-                <p style={{fontSize:12,color:G.muted,lineHeight:1.6}}>{t.exampleText}</p>
+                <p style={{fontSize:12,color:G.muted,lineHeight:1.7}}>{t.exampleText}</p>
+              </div>
+              <div style={{marginTop:16,maxWidth:400,margin:"16px auto 0"}}>
+                <p style={{fontSize:11,color:G.muted,marginBottom:6,fontWeight:600}}>{t.exportAs}</p>
+                <div style={{display:"flex",gap:8,justifyContent:"center"}}>
+                  {[["chat",t.formatChat],["pdf",t.formatPDF],["word",t.formatWord]].map(([val,label])=>(
+                    <button key={val} onClick={()=>setOutputFormat(val)} style={{...S.chip(outputFormat===val),fontSize:12}}>{label}</button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
           {messages.map((m,i)=>(
             <div key={i} className="msg" style={{display:"flex",flexDirection:"column",alignItems:m.role==="user"?(isAr?"flex-start":"flex-end"):(isAr?"flex-end":"flex-start")}}>
-              {m.role==="user"?(
-                <div style={{background:G.primary,color:"#fff",borderRadius:isAr?"16px 16px 16px 4px":"16px 16px 4px 16px",padding:"10px 14px",maxWidth:"82%",fontSize:14,lineHeight:1.6}}>{m.content}</div>
-              ):(
-                <div style={{maxWidth:"92%"}}>
-                  <div style={{background:G.white,border:`1px solid ${G.border}`,borderRadius:isAr?"16px 16px 4px 16px":"16px 16px 16px 4px",padding:"14px",fontSize:13.5,lineHeight:1.8,color:G.text}}>
-                    {renderSections(m.content, lang)}
+              {m.role==="user"?(<div style={{background:G.primary,color:"#fff",borderRadius:isAr?"16px 16px 16px 4px":"16px 16px 4px 16px",padding:"10px 16px",maxWidth:isDesktop?"70%":"82%",fontSize:14,lineHeight:1.6}}>{m.content}</div>):(
+                <div style={{maxWidth:isDesktop?"90%":"95%"}}>
+                  <div style={{background:G.white,border:`1px solid ${G.border}`,borderRadius:isAr?"16px 16px 4px 16px":"16px 16px 16px 4px",padding:isDesktop?"20px":"14px"}}>
+                    <RenderedContent content={m.content} isAr={m.outputLang==="ar"}/>
                   </div>
-                  <button onClick={()=>downloadText(m.content)} style={{background:"none",border:"none",color:G.primary,fontSize:12,fontWeight:600,marginTop:6,padding:"2px 4px",cursor:"pointer"}}>{t.downloading}</button>
+                  <ExportButtons content={m.content} title="Lesson Plan" isAr={m.outputLang==="ar"}/>
                 </div>
               )}
             </div>
           ))}
-          {isLoading&&(
-            <div className="msg" style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:G.white,border:`1px solid ${G.border}`,borderRadius:12,width:"fit-content"}}>
-              <div style={{width:16,height:16,borderRadius:"50%",border:`2px solid ${G.border}`,borderTopColor:G.primary,animation:"spin 1s linear infinite"}}/>
-              <span style={{fontSize:13,color:G.muted}}>{t.building}</span>
-            </div>
-          )}
+          {isLoading&&(<div className="msg" style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:G.white,border:`1px solid ${G.border}`,borderRadius:12,width:"fit-content"}}><div style={{width:16,height:16,borderRadius:"50%",border:`2px solid ${G.border}`,borderTopColor:G.primary,animation:"spin 1s linear infinite"}}/><span style={{fontSize:13,color:G.muted}}>{t.building}</span></div>)}
           {error&&<div style={{background:"#fff0f0",border:"1px solid #fcc",borderRadius:10,padding:"10px 14px",color:G.red,fontSize:13}}>{error}</div>}
           <div ref={chatEndRef}/>
         </div>
-        <div style={{padding:"0 12px 4px",flexShrink:0}}>
+        <div style={{background:G.white,borderTop:`1px solid ${G.border}`,padding:isDesktop?"12px 32px 16px":"8px 12px 16px",maxWidth:maxW,width:"100%",margin:"0 auto"}}>
           <input type="file" ref={extraRef} multiple onChange={e=>setExtraFiles([...e.target.files])} style={{display:"none"}}/>
-          {extraFiles.length>0&&<p style={{fontSize:11,color:G.primary,marginBottom:4}}>📎 {extraFiles.length}</p>}
-        </div>
-        <div style={{padding:"8px 12px 16px",background:G.white,borderTop:`1px solid ${G.border}`,flexShrink:0,display:"flex",gap:8,alignItems:"flex-end",flexDirection:isAr?"row-reverse":"row"}}>
-          <button onClick={()=>extraRef.current.click()} style={{background:G.accentLight,border:"none",borderRadius:10,padding:"10px",color:G.primary,flexShrink:0,fontSize:16,cursor:"pointer"}}>📎</button>
-          <textarea value={chatInput} onChange={e=>setChatInput(e.target.value)}
-            onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChat();}}}
-            placeholder={messages.length===0?t.describeLesson:t.followUp}
-            style={{flex:1,minHeight:42,maxHeight:120,background:G.surface,border:`1px solid ${G.border}`,borderRadius:10,padding:"10px 12px",fontFamily,fontSize:14,resize:"none",color:G.text,lineHeight:1.5,direction:dir}} rows={1}/>
-          <button onClick={sendChat} disabled={!canSend} style={{background:canSend?G.primary:G.border,border:"none",borderRadius:10,padding:"10px 14px",color:"#fff",fontWeight:700,fontSize:16,flexShrink:0,cursor:"pointer"}}>{t.send}</button>
+          {extraFiles.length>0&&<p style={{fontSize:11,color:G.primary,marginBottom:6}}>📎 {extraFiles.length} file(s) attached</p>}
+          <div style={{display:"flex",gap:8,alignItems:"flex-end",flexDirection:isAr?"row-reverse":"row"}}>
+            <button onClick={()=>extraRef.current.click()} style={{background:G.accentLight,border:"none",borderRadius:10,padding:"10px",color:G.primary,flexShrink:0,fontSize:16,cursor:"pointer"}}>📎</button>
+            <textarea value={chatInput} onChange={e=>setChatInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChat();}}} placeholder={messages.length===0?t.describeLesson:t.followUp} style={{flex:1,minHeight:44,maxHeight:140,background:G.surface,border:`1px solid ${G.border}`,borderRadius:10,padding:"10px 12px",fontFamily,fontSize:14,resize:"none",color:G.text,lineHeight:1.5,direction:dir}} rows={1}/>
+            <button onClick={sendChat} disabled={!canSend} style={{background:canSend?G.primary:G.border,border:"none",borderRadius:10,padding:"10px 16px",color:"#fff",fontWeight:700,fontSize:16,flexShrink:0,cursor:"pointer"}}>{t.send}</button>
+          </div>
         </div>
       </div>
     );
   }
 
-  // AMERICAN PATHWAY SCREEN
-  if (screen==="american") {
-    const canGenerate = apSubject.trim()&&apTopic.trim();
-    return (
-      <div style={{...S.app,padding:"0 0 32px"}} className="fade">
-        <div style={S.topBar()}>
-          <button onClick={()=>setScreen("home")} style={{background:"none",border:"none",color:"#fff",fontSize:13,cursor:"pointer"}}>{t.back}</button>
-          <span style={{color:"#fff",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:15}}>{t.americanSetup}</span>
-          <LangBtn/>
-        </div>
-        <div style={{padding:"16px"}}>
-          {error&&<div style={{background:"#fff0f0",border:"1px solid #fcc",borderRadius:10,padding:"12px",marginBottom:14,color:G.red,fontSize:13}}>{error}</div>}
-
-          <div style={{...S.card,marginBottom:14}}>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
-              <div>
-                <span style={S.label}>{t.subject} *</span>
-                <input value={apSubject} onChange={e=>setApSubject(e.target.value)} placeholder={t.subjectHint} style={S.input}/>
+  // ── AMERICAN PATHWAY ──
+  if(screen==="american"){
+    const canGenerate=apSubject.trim()&&apTopic.trim();
+    return(
+      <div style={S.app} className="fade">
+        <div style={S.inner}>
+          <div style={S.topBar}>
+            <button onClick={()=>setScreen("home")} style={{background:"none",border:"none",color:"#fff",fontSize:13,cursor:"pointer"}}>{t.back}</button>
+            <span style={{color:"#fff",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:isDesktop?17:15}}>{t.americanSetup}</span>
+            <LangBtn/>
+          </div>
+          <div style={{flex:1,padding:isDesktop?"24px 32px":"16px",overflowY:"auto"}}>
+            {error&&<div style={{background:"#fff0f0",border:"1px solid #fcc",borderRadius:10,padding:"12px",marginBottom:14,color:G.red,fontSize:13}}>{error}</div>}
+            <div style={{display:isDesktop?"grid":"block",gridTemplateColumns:"1fr 1fr",gap:16}}>
+              <div style={{...S.card,marginBottom:14}}>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+                  <div><span style={S.label}>{t.subject} *</span><input value={apSubject} onChange={e=>setApSubject(e.target.value)} placeholder={t.subjectHint} style={S.input}/></div>
+                  <div><span style={S.label}>{t.gradeLevel}</span><input value={apGrade} onChange={e=>setApGrade(e.target.value)} placeholder="e.g. Grade 4" style={S.input}/></div>
+                </div>
+                <span style={S.label}>{t.topic} *</span>
+                <input value={apTopic} onChange={e=>setApTopic(e.target.value)} placeholder={t.topicHint} style={{...S.input,marginBottom:10}}/>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+                  <div><span style={S.label}>{t.instructor}</span><input value={apInstructor} onChange={e=>setApInstructor(e.target.value)} placeholder={t.instructorHint} style={S.input}/></div>
+                  <div><span style={S.label}>{t.classField}</span><input value={apClass} onChange={e=>setApClass(e.target.value)} placeholder={t.classHint} style={S.input}/></div>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
+                  <div><span style={S.label}>{t.unit}</span><input value={apUnit} onChange={e=>setApUnit(e.target.value)} placeholder={t.unitHint} style={S.input}/></div>
+                  <div><span style={S.label}>{t.lessonNum}</span><input value={apLesson} onChange={e=>setApLesson(e.target.value)} placeholder={t.lessonNumHint} style={S.input}/></div>
+                  <div><span style={S.label}>{t.week}</span><input value={apWeek} onChange={e=>setApWeek(e.target.value)} placeholder={t.weekHint} style={S.input}/></div>
+                </div>
               </div>
-              <div>
-                <span style={S.label}>{t.gradeLevel}</span>
-                <input value={apGrade} onChange={e=>setApGrade(e.target.value)} placeholder="e.g. Grade 4" style={S.input}/>
+              <div style={{...S.card,marginBottom:14}}>
+                <span style={S.label}>{t.duration}</span>
+                <select value={apDuration} onChange={e=>setApDuration(e.target.value)} style={{...S.input,marginBottom:10}}>{DURATIONS.map(d=><option key={d}>{d}</option>)}</select>
+                <span style={S.label}>{t.standards}</span>
+                <textarea value={apStandards} onChange={e=>setApStandards(e.target.value)} placeholder={t.standardsHint} style={{...S.input,minHeight:80,resize:"vertical",marginBottom:10}}/>
+                <span style={S.label}>{t.outputLang}</span>
+                <div style={{display:"flex",gap:8}}>
+                  {[["en","🇬🇧 "+t.english],["ar","🇸🇦 "+t.arabic]].map(([l,label])=>(<button key={l} onClick={()=>setApOutputLang(l)} style={{...S.chip(apOutputLang===l),flex:1,textAlign:"center"}}>{label}</button>))}
+                </div>
               </div>
             </div>
-            <span style={S.label}>{t.topic} *</span>
-            <input value={apTopic} onChange={e=>setApTopic(e.target.value)} placeholder={t.topicHint} style={{...S.input,marginBottom:10}}/>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
-              <div><span style={S.label}>{t.classField}</span><input value={apClass} onChange={e=>setApClass(e.target.value)} placeholder={t.classHint} style={S.input}/></div>
-              <div><span style={S.label}>{t.unit}</span><input value={apUnit} onChange={e=>setApUnit(e.target.value)} placeholder={t.unitHint} style={S.input}/></div>
-              <div><span style={S.label}>{t.week}</span><input value={apWeek} onChange={e=>setApWeek(e.target.value)} placeholder={t.weekHint} style={S.input}/></div>
+            <div style={{...S.card,marginBottom:14}}>
+              <span style={S.label}>{t.outputFormat}</span>
+              <div style={{display:"flex",gap:8}}>
+                {[["word","📝 Word (.doc)"],["pdf","📄 PDF"],["chat","💬 In-App Chat"]].map(([val,label])=>(<button key={val} onClick={()=>setApExportFormat(val)} style={{...S.chip(apExportFormat===val),flex:1,textAlign:"center",padding:"9px 4px",fontSize:12}}>{label}</button>))}
+              </div>
+              <p style={{fontSize:11,color:G.muted,marginTop:8}}>Word and PDF will export as a filled Dar Al-Thikr template document.</p>
             </div>
+            <button onClick={generateAmericanPathway} disabled={!canGenerate} style={{...S.btnPrimary,opacity:canGenerate?1:.4}}>{t.generateAmerican}</button>
           </div>
-
-          <div style={{...S.card,marginBottom:14}}>
-            <span style={S.label}>{t.lessonNum}</span>
-            <input value={apLesson} onChange={e=>setApLesson(e.target.value)} placeholder={t.lessonNumHint} style={{...S.input,marginBottom:10}}/>
-            <span style={S.label}>{t.duration}</span>
-            <select value={apDuration} onChange={e=>setApDuration(e.target.value)} style={{...S.input,marginBottom:10}}>
-              {DURATIONS.map(d=><option key={d} value={d}>{d}</option>)}
-            </select>
-            <span style={S.label}>{t.standards}</span>
-            <textarea value={apStandards} onChange={e=>setApStandards(e.target.value)} placeholder={t.standardsHint} style={{...S.input,minHeight:70,resize:"vertical"}}/>
-          </div>
-
-          <div style={{...S.card,marginBottom:16}}>
-            <span style={S.label}>{t.outputLang}</span>
-            <div style={{display:"flex",gap:10}}>
-              {["en","ar"].map(l=>(
-                <button key={l} onClick={()=>setApOutputLang(l)} style={{...S.chip(apOutputLang===l),flex:1,textAlign:"center"}}>
-                  {l==="en"?"🇬🇧 "+t.english:"🇸🇦 "+t.arabic}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <button onClick={generateAmericanPathway} disabled={!canGenerate} style={{...S.btnPrimary,opacity:canGenerate?1:.4}}>
-            {t.generateAmerican}
-          </button>
         </div>
       </div>
     );
   }
 
-  // SETUP
-  if (screen==="setup") {
-    const grades = ageLevel?GRADE_MAP[ageLevel]:[];
-    const canContinue = frameworks.length>0&&ageLevel;
-    return (
-      <div style={{...S.app,padding:"0 0 32px"}} className="fade">
-        <div style={S.topBar()}>
-          <button onClick={()=>setScreen("home")} style={{background:"none",border:"none",color:"#fff",fontSize:13,cursor:"pointer"}}>{t.back}</button>
-          <span style={{color:"#fff",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:16}}>{t.lessonSetup}</span>
-          <LangBtn/>
-        </div>
-        <div style={{padding:"16px"}}>
-          <div style={{...S.card,marginBottom:14}}>
-            <span style={S.label}>{t.selectFrameworks}</span>
-            <p style={{fontSize:12,color:G.muted,marginBottom:10}}>{t.selectAll}</p>
-            <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
-              {FRAMEWORKS.map(fw=>(<button key={fw} onClick={()=>toggleFw(fw)} style={S.chip(frameworks.includes(fw))}>{fw}</button>))}
-            </div>
+  // ── SETUP ──
+  if(screen==="setup"){
+    const grades=ageLevel?GRADE_MAP[ageLevel]:[];const canContinue=frameworks.length>0&&ageLevel;
+    return(
+      <div style={S.app} className="fade">
+        <div style={S.inner}>
+          <div style={S.topBar}>
+            <button onClick={()=>setScreen("home")} style={{background:"none",border:"none",color:"#fff",fontSize:13,cursor:"pointer"}}>{t.back}</button>
+            <span style={{color:"#fff",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:isDesktop?17:16}}>{t.lessonSetup}</span>
+            <LangBtn/>
           </div>
-          <div style={{...S.card,marginBottom:14}}>
-            <span style={S.label}>{t.ageLevel}</span>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-              {AGE_LEVELS.map(al=>{const on=ageLevel===al.value; return (
-                <button key={al.value} onClick={()=>{setAgeLevel(al.value);setGradeLevel("");}} style={{padding:"12px",borderRadius:10,border:`1.5px solid ${on?G.primary:G.border}`,background:on?G.accentLight:G.white,textAlign:isAr?"right":"left",cursor:"pointer"}}>
-                  <div style={{fontSize:18,marginBottom:2}}>{al.emoji}</div>
+          <div style={{flex:1,padding:isDesktop?"24px 32px":"16px",overflowY:"auto"}}>
+            <div style={{...S.card,marginBottom:14}}>
+              <span style={S.label}>{t.selectFrameworks}</span>
+              <p style={{fontSize:12,color:G.muted,marginBottom:10}}>{t.selectAll}</p>
+              <div style={{display:"flex",flexWrap:"wrap",gap:7}}>{FRAMEWORKS.map(fw=>(<button key={fw} onClick={()=>toggleFw(fw)} style={S.chip(frameworks.includes(fw))}>{fw}</button>))}</div>
+            </div>
+            <div style={{...S.card,marginBottom:14}}>
+              <span style={S.label}>{t.ageLevel}</span>
+              <div style={{display:"grid",gridTemplateColumns:isDesktop?"repeat(3,1fr)":"1fr 1fr",gap:10}}>
+                {AGE_LEVELS.map(al=>{const on=ageLevel===al.value;return(<button key={al.value} onClick={()=>{setAgeLevel(al.value);setGradeLevel("");}} style={{padding:"12px",borderRadius:10,border:`1.5px solid ${on?G.primary:G.border}`,background:on?G.accentLight:G.white,textAlign:isAr?"right":"left",cursor:"pointer"}}>
+                  <div style={{fontSize:20,marginBottom:3}}>{al.emoji}</div>
                   <div style={{fontSize:13,fontWeight:600,color:on?G.primary:G.text}}>{isAr?al.labelAr:al.label}</div>
                   <div style={{fontSize:11,color:G.muted}}>{isAr?al.subAr:al.sub}</div>
-                </button>
-              );})}
-            </div>
-          </div>
-          {grades.length>0&&(
-            <div style={{...S.card,marginBottom:14}}>
-              <span style={S.label}>{t.gradeLevel} <span style={{color:G.muted,textTransform:"none",letterSpacing:0,fontWeight:400}}>{t.optional}</span></span>
-              <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
-                {grades.map(g=>(<button key={g} onClick={()=>setGradeLevel(gradeLevel===g?"":g)} style={S.chip(gradeLevel===g)}>{g}</button>))}
+                </button>);})}
               </div>
             </div>
-          )}
-          <button onClick={()=>setScreen(mode===1?"input":"chat")} disabled={!canContinue} style={{...S.btnPrimary,opacity:canContinue?1:.4}}>{t.continue}</button>
+            {grades.length>0&&(<div style={{...S.card,marginBottom:14}}><span style={S.label}>{t.gradeLevel} <span style={{color:G.muted,textTransform:"none",letterSpacing:0,fontWeight:400}}>{t.optional}</span></span><div style={{display:"flex",flexWrap:"wrap",gap:7}}>{grades.map(g=>(<button key={g} onClick={()=>setGradeLevel(gradeLevel===g?"":g)} style={S.chip(gradeLevel===g)}>{g}</button>))}</div></div>)}
+            <FormatSelector value={outputFormat} onChange={setOutputFormat}/>
+            <button onClick={()=>setScreen(mode===1?"input":"chat")} disabled={!canContinue} style={{...S.btnPrimary,opacity:canContinue?1:.4}}>{t.continue}</button>
+          </div>
         </div>
       </div>
     );
   }
 
-  // TEMPLATE INPUT
-  if (screen==="input") return (
-    <div style={{...S.app,padding:"0 0 32px"}} className="fade">
-      <div style={S.topBar()}>
-        <button onClick={()=>setScreen("setup")} style={{background:"none",border:"none",color:"#fff",fontSize:13,cursor:"pointer"}}>{t.back}</button>
-        <span style={{color:"#fff",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:16}}>{t.templateMode}</span>
-        <div style={{display:"flex",gap:6}}><LangBtn/><button onClick={()=>setShowModal(true)} style={{background:"rgba(255,255,255,.2)",border:"1px solid rgba(255,255,255,.3)",borderRadius:14,padding:"4px 10px",color:"#fff",fontSize:12,cursor:"pointer"}}>⚡{credits}</button></div>
-      </div>
-      <div style={{padding:"16px"}}>
-        {error&&<div style={{background:"#fff0f0",border:"1px solid #fcc",borderRadius:10,padding:"12px",marginBottom:14,color:G.red,fontSize:13}}>{error}</div>}
-        <div style={{...S.card,marginBottom:14}}>
-          <span style={S.label}>{t.yourTemplate}</span>
-          <input type="file" ref={templateRef} onChange={e=>setTemplateFile(e.target.files[0])} accept=".txt,.doc,.docx" style={{display:"none"}}/>
-          <button onClick={()=>templateRef.current.click()} style={{...S.btnOutline,width:"100%",padding:"14px"}}>
-            {templateFile?`✓  ${templateFile.name}`:t.uploadTemplate}
-          </button>
+  // ── TEMPLATE INPUT ──
+  if(screen==="input")return(
+    <div style={S.app} className="fade">
+      <div style={S.inner}>
+        <div style={S.topBar}>
+          <button onClick={()=>setScreen("setup")} style={{background:"none",border:"none",color:"#fff",fontSize:13,cursor:"pointer"}}>{t.back}</button>
+          <span style={{color:"#fff",fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:isDesktop?17:16}}>{t.templateMode}</span>
+          <div style={{display:"flex",gap:6}}><LangBtn/><button onClick={()=>setShowModal(true)} style={{background:"rgba(255,255,255,.2)",border:"1px solid rgba(255,255,255,.3)",borderRadius:14,padding:"4px 10px",color:"#fff",fontSize:12,cursor:"pointer"}}>⚡{credits}</button></div>
         </div>
-        <div style={{...S.card,marginBottom:14}}>
-          <span style={S.label}>{t.refFiles} <span style={{color:G.muted,textTransform:"none",letterSpacing:0,fontWeight:400}}>{t.optional}</span></span>
-          <input type="file" ref={extraRef} multiple onChange={e=>setExtraFiles([...e.target.files])} style={{display:"none"}}/>
-          <button onClick={()=>extraRef.current.click()} style={{...S.btnGhost,width:"100%",padding:"12px"}}>
-            {extraFiles.length>0?`📎  ${extraFiles.length}`:t.attachRef}
-          </button>
+        <div style={{flex:1,padding:isDesktop?"24px 32px":"16px",overflowY:"auto"}}>
+          {error&&<div style={{background:"#fff0f0",border:"1px solid #fcc",borderRadius:10,padding:"12px",marginBottom:14,color:G.red,fontSize:13}}>{error}</div>}
+          <div style={{...S.card,marginBottom:14}}>
+            <span style={S.label}>{t.yourTemplate}</span>
+            <input type="file" ref={templateRef} onChange={e=>setTemplateFile(e.target.files[0])} accept=".txt,.doc,.docx" style={{display:"none"}}/>
+            <button onClick={()=>templateRef.current.click()} style={{...S.btnOutline,width:"100%",padding:"14px"}}>{templateFile?`✓  ${templateFile.name}`:t.uploadTemplate}</button>
+            <p style={{fontSize:11,color:G.muted,marginTop:8}}>The AI will fill in your template's exact structure and export it as a complete document.</p>
+          </div>
+          <div style={{...S.card,marginBottom:14}}>
+            <span style={S.label}>{t.refFiles} <span style={{color:G.muted,textTransform:"none",fontWeight:400}}>{t.optional}</span></span>
+            <input type="file" ref={extraRef} multiple onChange={e=>setExtraFiles([...e.target.files])} style={{display:"none"}}/>
+            <button onClick={()=>extraRef.current.click()} style={{...S.btnGhost,width:"100%",padding:"12px"}}>{extraFiles.length>0?`📎  ${extraFiles.length}`:t.attachRef}</button>
+          </div>
+          <FormatSelector value={outputFormat} onChange={setOutputFormat}/>
+          <button onClick={generateTemplate} disabled={!templateFile} style={{...S.btnPrimary,opacity:templateFile?1:.4}}>{t.generate}</button>
         </div>
-        <button onClick={generateTemplate} disabled={!templateFile} style={{...S.btnPrimary,opacity:templateFile?1:.4}}>{t.generate}</button>
       </div>
     </div>
   );
 
-  // HOME
-  return (
-    <div style={S.app} className="fade">
-      <div style={{background:G.white,borderBottom:`1px solid ${G.border}`,padding:"14px 18px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <img src={LOGO_URL} alt="Dar Al-Thikr" style={{height:36,objectFit:"contain"}} onError={e=>e.target.style.display='none'}/>
-        <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <button onClick={()=>setLang(isAr?"en":"ar")} style={{background:G.accentLight,border:`1px solid ${G.border}`,borderRadius:20,padding:"5px 12px",color:G.primary,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily}}>{isAr?"EN":"عر"}</button>
-          <button onClick={()=>setScreen("history")} style={{...S.btnGhost,padding:"7px 12px",fontSize:13}}>📋</button>
-          <button onClick={()=>setShowModal(true)} style={{background:G.accentLight,border:`1px solid ${G.border}`,borderRadius:10,padding:"7px 12px",color:G.primary,fontSize:13,fontWeight:600,cursor:"pointer"}}>⚡{credits}</button>
-          <button onClick={signOut} style={{...S.btnGhost,padding:"7px 12px",fontSize:13}}>{t.signOut}</button>
+  // ── HOME ──
+  const modes=[
+    {id:1,icon:"📋",title:t.templateMode,desc:t.templateDesc,tag:t.templateTag,color:G.primary,bg:G.accentLight,onClick:()=>{setMode(1);setScreen("setup");}},
+    {id:2,icon:"💬",title:t.freeMode,desc:t.freeDesc,tag:t.freeTag,color:"#2a6eb5",bg:"#e8f0fb",onClick:()=>{setMode(2);setScreen("setup");}},
+    {id:3,icon:"🏫",title:t.americanMode,desc:t.americanDesc,tag:t.americanTag,color:"#7a3a9a",bg:"#f3eafc",onClick:()=>{setMode(3);setScreen("american");}},
+  ];
+
+  return(
+    <div style={S.app}>
+      <div style={S.inner}>
+        <div style={{background:G.white,borderBottom:`1px solid ${G.border}`,padding:isDesktop?"16px 32px":"14px 18px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <div style={{width:isDesktop?44:38,height:isDesktop?44:38,borderRadius:12,background:G.primary,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 4px 12px ${G.primary}30`}}><TeacherIcon size={isDesktop?28:24}/></div>
+            <div><div style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:800,fontSize:isDesktop?20:17,color:G.primary,lineHeight:1}}>EduBudd</div>{isDesktop&&<div style={{fontSize:11,color:G.muted,marginTop:2}}>AI Lesson Plan Generator</div>}</div>
+          </div>
+          <div style={{display:"flex",gap:8,alignItems:"center"}}>
+            <button onClick={()=>setLang(isAr?"en":"ar")} style={{background:G.accentLight,border:`1px solid ${G.border}`,borderRadius:20,padding:"6px 14px",color:G.primary,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily}}>{isAr?"EN":"عر"}</button>
+            <button onClick={()=>setScreen("history")} style={{...S.btnGhost,padding:"7px 12px",fontSize:13}}>📋{isDesktop?` ${t.history}`:""}</button>
+            <button onClick={()=>setShowModal(true)} style={{background:G.accentLight,border:`1px solid ${G.border}`,borderRadius:10,padding:"7px 12px",color:G.primary,fontSize:13,fontWeight:600,cursor:"pointer"}}>⚡{credits}</button>
+            <button onClick={signOut} style={{...S.btnGhost,padding:"7px 12px",fontSize:13}}>{isDesktop?t.signOut:"↗"}</button>
+          </div>
         </div>
-      </div>
 
-      <div style={{padding:"28px 18px 20px",textAlign:"center",background:`linear-gradient(180deg,${G.white} 0%,${G.bg} 100%)`}}>
-        <div style={{width:60,height:60,borderRadius:18,background:G.primary,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",fontSize:28,boxShadow:`0 8px 24px ${G.primary}30`}}>📝</div>
-        <h1 style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:800,fontSize:26,color:G.primary,marginBottom:8}}>EduBudd</h1>
-        <p style={{color:G.muted,fontSize:14,lineHeight:1.65,maxWidth:300,margin:"0 auto"}}>{t.tagline}</p>
-        <p style={{color:G.primary,fontSize:13,marginTop:8,fontWeight:600}}>{t.welcome}</p>
-      </div>
+        <div style={{padding:isDesktop?"48px 32px 32px":"28px 18px 20px",textAlign:"center",background:`linear-gradient(180deg,${G.white} 0%,${G.bg} 100%)`}}>
+          <div style={{width:isDesktop?88:68,height:isDesktop?88:68,borderRadius:isDesktop?24:20,background:G.primary,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 18px",boxShadow:`0 12px 40px ${G.primary}40`}}><TeacherIcon size={isDesktop?58:44}/></div>
+          <h1 style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:800,fontSize:isDesktop?42:28,color:G.primary,marginBottom:10}}>EduBudd</h1>
+          <p style={{color:G.muted,fontSize:isDesktop?17:14,lineHeight:1.7,maxWidth:isDesktop?520:300,margin:"0 auto 14px"}}>{t.tagline}</p>
+          <img src={LOGO_URL} alt="Dar Al-Thikr" style={{height:isDesktop?42:32,objectFit:"contain",opacity:.8}} onError={e=>e.target.style.display='none'}/>
+          <p style={{color:G.primary,fontSize:13,marginTop:10,fontWeight:600}}>{t.welcome}</p>
+        </div>
 
-      <div style={{padding:"0 16px 32px"}}>
-        <p style={{fontSize:11,color:G.muted,textTransform:"uppercase",letterSpacing:".1em",marginBottom:12,fontWeight:600}}>{t.chooseMode}</p>
-
-        {[
-          {id:1,icon:"📋",title:t.templateMode,desc:t.templateDesc,tag:t.templateTag,color:G.primary,bg:G.accentLight,onClick:()=>{setMode(1);setScreen("setup");}},
-          {id:2,icon:"💬",title:t.freeMode,desc:t.freeDesc,tag:t.freeTag,color:"#2a6eb5",bg:"#e8f0fb",onClick:()=>{setMode(2);setScreen("setup");}},
-          {id:3,icon:"🏫",title:t.americanMode,desc:t.americanDesc,tag:t.americanTag,color:"#7a3a9a",bg:"#f3eafc",onClick:()=>{setMode(3);setScreen("american");}},
-        ].map(m=>(
-          <div key={m.id} onClick={m.onClick} style={{...S.card,marginBottom:12,cursor:"pointer",display:"flex",gap:14,alignItems:"flex-start",transition:"box-shadow .15s"}}>
-            <div style={{width:48,height:48,borderRadius:13,background:m.bg,border:`1px solid ${m.color}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{m.icon}</div>
-            <div>
-              <h3 style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:16,color:G.text,marginBottom:4}}>{m.title}</h3>
-              <p style={{color:G.muted,fontSize:13,lineHeight:1.6}}>{m.desc}</p>
-              <span style={{display:"inline-block",marginTop:8,background:m.bg,borderRadius:6,padding:"3px 10px",color:m.color,fontSize:11,fontWeight:700}}>{m.tag.toUpperCase()}</span>
-            </div>
-          </div>
-        ))}
-
-        {history.length>0&&(
-          <div style={{...S.card,background:G.accentLight,borderColor:G.border,marginTop:4}}>
-            <p style={{fontSize:12,fontWeight:600,color:G.primary,marginBottom:8}}>{t.recentPlans}</p>
-            {history.slice(0,2).map(h=>(
-              <div key={h.id} onClick={()=>setViewingHistory(h)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${G.border}`,cursor:"pointer"}}>
-                <div>
-                  <p style={{fontSize:13,fontWeight:600,color:G.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:220}}>{h.title}</p>
-                  <p style={{fontSize:11,color:G.muted}}>{h.ageLevel} · {h.date}</p>
-                </div>
-                <span style={{color:G.primary,fontSize:13}}>→</span>
+        <div style={{padding:isDesktop?"0 32px 40px":"0 16px 32px",flex:1}}>
+          <p style={{fontSize:11,color:G.muted,textTransform:"uppercase",letterSpacing:".1em",marginBottom:14,fontWeight:600}}>{t.chooseMode}</p>
+          <div style={{display:"grid",gridTemplateColumns:isDesktop?"1fr 1fr 1fr":"1fr",gap:isDesktop?16:12,marginBottom:isDesktop?24:16}}>
+            {modes.map(m=>(<div key={m.id} onClick={m.onClick} style={{...S.card,cursor:"pointer",display:"flex",flexDirection:isDesktop?"column":"row",gap:14,alignItems:isDesktop?"flex-start":"center"}} className="mode-card">
+              <div style={{width:isDesktop?56:48,height:isDesktop?56:48,borderRadius:16,background:m.bg,border:`1px solid ${m.color}20`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:isDesktop?28:22,flexShrink:0}}>{m.icon}</div>
+              <div style={{flex:1}}>
+                <h3 style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:isDesktop?17:15,color:G.text,marginBottom:6}}>{m.title}</h3>
+                <p style={{color:G.muted,fontSize:isDesktop?13.5:13,lineHeight:1.6}}>{m.desc}</p>
+                <span style={{display:"inline-block",marginTop:8,background:m.bg,borderRadius:6,padding:"3px 10px",color:m.color,fontSize:11,fontWeight:700}}>{m.tag.toUpperCase()}</span>
               </div>
-            ))}
-            <button onClick={()=>setScreen("history")} style={{background:"none",border:"none",color:G.primary,fontSize:12,fontWeight:600,marginTop:8,padding:0,cursor:"pointer"}}>{t.viewAll}</button>
+            </div>))}
           </div>
-        )}
-      </div>
 
-      {showModal&&(
-        <div style={{position:"fixed",inset:0,background:"#00000070",zIndex:200,display:"flex",alignItems:"flex-end"}} onClick={()=>setShowModal(false)}>
-          <div style={{...S.card,width:"100%",maxWidth:480,margin:"0 auto",borderRadius:"20px 20px 0 0",padding:"24px 20px 36px",animation:"slideUp .3s ease"}} onClick={e=>e.stopPropagation()}>
+          {history.length>0&&(<div style={{...S.card,background:G.accentLight,borderColor:G.border}}>
+            <p style={{fontSize:12,fontWeight:600,color:G.primary,marginBottom:10}}>{t.recentPlans}</p>
+            <div style={{display:"grid",gridTemplateColumns:isDesktop?"1fr 1fr":"1fr",gap:0}}>
+              {history.slice(0,isDesktop?4:2).map(h=>(<div key={h.id} onClick={()=>setViewingHistory(h)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${G.border}`,cursor:"pointer"}}>
+                <div style={{flex:1,minWidth:0}}><p style={{fontSize:13,fontWeight:600,color:G.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:isDesktop?280:200}}>{h.title}</p><p style={{fontSize:11,color:G.muted}}>{h.ageLevel} · {h.date}</p></div>
+                <span style={{color:G.primary,fontSize:13,flexShrink:0,marginLeft:8}}>→</span>
+              </div>))}
+            </div>
+            <button onClick={()=>setScreen("history")} style={{background:"none",border:"none",color:G.primary,fontSize:12,fontWeight:600,marginTop:10,padding:0,cursor:"pointer"}}>{t.viewAll}</button>
+          </div>)}
+        </div>
+
+        {showModal&&(<div style={{position:"fixed",inset:0,background:"#00000070",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={()=>setShowModal(false)}>
+          <div style={{...S.card,width:"100%",maxWidth:480,borderRadius:"20px 20px 0 0",padding:"24px 24px 40px",animation:"slideUp .3s ease"}} onClick={e=>e.stopPropagation()}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-              <div>
-                <h3 style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:18}}>{t.yourCredits}</h3>
-                <p style={{color:G.muted,fontSize:13,marginTop:2}}><strong style={{color:G.primary}}>{credits} {t.credits}</strong> {t.creditsLeft}</p>
-              </div>
-              <button onClick={()=>setShowModal(false)} style={{background:"none",border:"none",color:G.muted,fontSize:22,cursor:"pointer"}}>×</button>
+              <div><h3 style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontWeight:700,fontSize:20}}>{t.yourCredits}</h3><p style={{color:G.muted,fontSize:13,marginTop:2}}><strong style={{color:G.primary}}>{credits} {t.credits}</strong> {t.creditsLeft}</p></div>
+              <button onClick={()=>setShowModal(false)} style={{background:"none",border:"none",color:G.muted,fontSize:24,cursor:"pointer"}}>×</button>
             </div>
-            <div style={{background:G.accentLight,border:`1px solid ${G.border}`,borderRadius:12,padding:"14px 16px"}}>
+            <div style={{background:G.accentLight,border:`1px solid ${G.border}`,borderRadius:12,padding:"16px"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <div>
-                  <p style={{fontWeight:600,fontSize:14,marginBottom:2}}>{t.watchAd}</p>
-                  <p style={{color:G.muted,fontSize:12}}>{t.watchAdDesc}</p>
-                  {adDone&&<p style={{color:G.primary,fontSize:12,marginTop:3,fontWeight:600}}>{t.creditAdded}</p>}
-                </div>
-                <button onClick={watchAd} disabled={adTimer!==null} style={{background:G.primary,color:"#fff",border:"none",borderRadius:8,padding:"10px 18px",fontFamily,fontWeight:600,fontSize:13,cursor:"pointer"}}>
-                  {adTimer!==null?`${adTimer}s…`:t.watch}
-                </button>
+                <div><p style={{fontWeight:600,fontSize:15,marginBottom:3}}>{t.watchAd}</p><p style={{color:G.muted,fontSize:12}}>{t.watchAdDesc}</p>{adDone&&<p style={{color:G.primary,fontSize:12,marginTop:4,fontWeight:600}}>{t.creditAdded}</p>}</div>
+                <button onClick={watchAd} disabled={adTimer!==null} style={{background:G.primary,color:"#fff",border:"none",borderRadius:10,padding:"11px 20px",fontFamily,fontWeight:600,fontSize:14,cursor:"pointer"}}>{adTimer!==null?`${adTimer}s…`:t.watch}</button>
               </div>
-              {adTimer!==null&&(
-                <div style={{marginTop:10,height:4,borderRadius:2,background:G.border}}>
-                  <div style={{height:"100%",borderRadius:2,background:G.primary,width:`${((5-adTimer)/5)*100}%`,transition:"width 1s linear"}}/>
-                </div>
-              )}
+              {adTimer!==null&&(<div style={{marginTop:12,height:4,borderRadius:2,background:G.border}}><div style={{height:"100%",borderRadius:2,background:G.primary,width:`${((5-adTimer)/5)*100}%`,transition:"width 1s linear"}}/></div>)}
             </div>
           </div>
-        </div>
-      )}
+        </div>)}
+      </div>
     </div>
   );
 }
