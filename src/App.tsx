@@ -612,15 +612,16 @@ Format using ## for main headings, **bold** for labels, and - for bullet lists.`
         model:"claude-sonnet-4-20250514",max_tokens:1000,
         system:`You are an expert American Pathway curriculum designer for Dar Al-Thikr School. ${li}
 Fill every section with the EXACT delimiters. Be specific, detailed, and classroom-ready.
-${apStandards?"":"Automatically identify and include the most relevant CCSS standards for the given grade, subject, and topic."}`,
+Automatically identify and include the most relevant CCSS standards for the given grade, subject, and topic. Always include the standard code (e.g. RL.4.3) and full description.`,
         messages:[{role:"user",content:`Fill every section for this lesson. Be thorough and specific.
 
 Subject: ${apSubject} | Grade: ${apGrade} | Topic: ${apTopic}
 Unit: ${apUnit} | Lesson: ${apLesson} | Week: ${apWeek} | Duration: ${apDuration}
-${apStandards?`Provided Standards: ${apStandards}`:`Auto-identify the most relevant CCSS standards for ${apGrade} ${apSubject} on ${apTopic}.`}
+Auto-identify the most relevant CCSS standards for ${apGrade} ${apSubject} on the topic: ${apTopic}.
 
 [STANDARDS]
-${apStandards||`List 4-6 most relevant CCSS codes and full descriptions for ${apGrade} ${apSubject} on the topic: ${apTopic}`}
+Automatically identify and list the 4-6 most relevant CCSS standards for ${apGrade} ${apSubject} on the topic: ${apTopic}.
+Format each as: CODE – Full standard description (one per line).
 [/STANDARDS]
 
 [OBJECTIVES]
@@ -921,9 +922,7 @@ Specific teaser for the next lesson.
           <div style={{...S.card,marginBottom:14}}>
             <span style={S.label}>{t.duration}</span>
             <select value={apDuration} onChange={e=>setApDuration(e.target.value)} style={{...S.input,marginBottom:10}}>{DURATIONS.map(d=><option key={d}>{d}</option>)}</select>
-            <span style={S.label}>{t.standardsOptional}</span>
-            <textarea value={apStandards} onChange={e=>setApStandards(e.target.value)} placeholder={t.standardsHint} style={{...S.input,minHeight:70,resize:"vertical",marginBottom:4}}/>
-            <p style={{fontSize:11,color:G.muted,marginBottom:12}}>{t.autoStandards}</p>
+            <p style={{fontSize:11,color:G.primary,marginBottom:12,fontWeight:600}}>✓ CCSS standards are identified automatically from your grade, subject, and topic.</p>
             <span style={S.label}>{t.outputLang}</span>
             <div style={{display:"flex",gap:8}}>
               {[["en","🇬🇧 "+t.english],["ar","🇸🇦 "+t.arabic]].map(([l,lb])=>(<button key={l} onClick={()=>setApOutputLang(l)} style={{...S.chip(apOutputLang===l),flex:1,textAlign:"center"}}>{lb}</button>))}
